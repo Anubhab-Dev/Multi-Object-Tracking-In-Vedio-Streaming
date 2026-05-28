@@ -14,6 +14,10 @@
     <link rel="stylesheet" href="/static/css/style.css">
 </head>
 <body>
+    <!-- Ambient Background Glows -->
+    <div class="ambient-glow glow-1"></div>
+    <div class="ambient-glow glow-2"></div>
+
     <div class="app-container">
         <!-- Sidebar Controls -->
         <aside class="sidebar">
@@ -81,7 +85,7 @@
             <div class="hardware-card">
                 <div class="status-indicator-container">
                     <span class="pulse-dot green"></span>
-                    <span>Device: <strong id="device-label">Apple M2 GPU (MPS)</strong></span>
+                    <span>Device: <strong id="device-label">Apple GPU (MPS)</strong></span>
                 </div>
             </div>
         </aside>
@@ -127,8 +131,17 @@
                         <div class="badge" id="stream-status">Offline</div>
                     </div>
                     <div class="video-container">
+                        <!-- HUD Target Brackets -->
+                        <div class="hud-corner top-left"></div>
+                        <div class="hud-corner top-right"></div>
+                        <div class="hud-corner bottom-left"></div>
+                        <div class="hud-corner bottom-right"></div>
+                        <div class="hud-grid-overlay"></div>
+                        <div class="hud-scanline"></div>
+                        
                         <div class="video-placeholder" id="placeholder-text">
-                            <span class="big-icon">📹</span>
+                            <div class="radar-ping"></div>
+                            <span class="big-icon">🛰️</span>
                             <p>Configure model settings and click "Start Stream" to begin multi-object tracking</p>
                         </div>
                         <img id="video-player" class="video-player hidden" src="" alt="Tracking feed">

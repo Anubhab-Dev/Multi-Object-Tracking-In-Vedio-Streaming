@@ -77,8 +77,15 @@ async function sendSettingsUpdate() {
 }
 
 function initCharts() {
-    // 1. Class Distribution Bar Chart
+    // 1. Class Distribution Bar Chart (Horizontal)
     const classCtx = document.getElementById('classChart').getContext('2d');
+    
+    // Create horizontal gradient for the bars
+    const barGradient = classCtx.createLinearGradient(0, 0, 300, 0);
+    barGradient.addColorStop(0, 'rgba(139, 92, 246, 0.15)'); // Electric Purple fading in
+    barGradient.addColorStop(0.5, 'rgba(14, 165, 233, 0.6)'); // Cyber Cyan middle
+    barGradient.addColorStop(1, 'rgba(16, 185, 129, 0.85)');   // Cyber Green tip
+
     classChart = new Chart(classCtx, {
         type: 'bar',
         data: {
@@ -86,34 +93,46 @@ function initCharts() {
             datasets: [{
                 label: 'Object Count',
                 data: [],
-                backgroundColor: 'rgba(139, 92, 246, 0.6)',
-                borderColor: '#8b5cf6',
-                borderWidth: 1,
-                borderRadius: 4
+                backgroundColor: barGradient,
+                borderColor: '#10b981',
+                borderWidth: 1.5,
+                borderRadius: 5,
+                borderSkipped: false
             }]
         },
         options: {
+            indexAxis: 'y', // Convert to horizontal bar chart for better readability
             responsive: true,
             maintainAspectRatio: false,
             plugins: {
                 legend: { display: false }
             },
             scales: {
-                y: {
-                    beginAtZero: true,
-                    grid: { color: 'rgba(255, 255, 255, 0.05)' },
-                    ticks: { color: '#8b92b6', stepSize: 1 }
-                },
                 x: {
+                    beginAtZero: true,
+                    grid: { color: 'rgba(255, 255, 255, 0.03)' },
+                    ticks: { color: '#7982a9', stepSize: 1 }
+                },
+                y: {
                     grid: { display: false },
-                    ticks: { color: '#8b92b6' }
+                    ticks: { color: '#7982a9' }
                 }
             }
         }
     });
 
-    // 2. Timeline Line Chart
+    // 2. Timeline Line Chart (Area Fills)
     const timelineCtx = document.getElementById('timelineChart').getContext('2d');
+    
+    // Create glowing area gradients
+    const gradTracks = timelineCtx.createLinearGradient(0, 0, 0, 240);
+    gradTracks.addColorStop(0, 'rgba(16, 185, 129, 0.25)'); // Cyber Green top
+    gradTracks.addColorStop(1, 'rgba(16, 185, 129, 0.0)');  // Fade out
+
+    const gradFps = timelineCtx.createLinearGradient(0, 0, 0, 240);
+    gradFps.addColorStop(0, 'rgba(14, 165, 233, 0.2)');   // Cyber Cyan top
+    gradFps.addColorStop(1, 'rgba(14, 165, 233, 0.0)');    // Fade out
+
     timelineChart = new Chart(timelineCtx, {
         type: 'line',
         data: {
@@ -123,18 +142,25 @@ function initCharts() {
                     label: 'Active Tracks',
                     data: [],
                     borderColor: '#10b981',
-                    backgroundColor: 'rgba(16, 185, 129, 0.1)',
+                    backgroundColor: gradTracks,
                     fill: true,
-                    tension: 0.3,
-                    borderWidth: 2
+                    tension: 0.4,
+                    borderWidth: 2.5,
+                    pointBackgroundColor: '#10b981',
+                    pointBorderColor: 'transparent',
+                    pointHoverRadius: 6
                 },
                 {
                     label: 'Processing FPS',
                     data: [],
-                    borderColor: '#3b82f6',
-                    borderWidth: 1.5,
-                    fill: false,
-                    tension: 0.3
+                    borderColor: '#0ea5e9',
+                    backgroundColor: gradFps,
+                    fill: true,
+                    tension: 0.4,
+                    borderWidth: 2,
+                    pointBackgroundColor: '#0ea5e9',
+                    pointBorderColor: 'transparent',
+                    pointHoverRadius: 5
                 }
             ]
         },
@@ -144,17 +170,17 @@ function initCharts() {
             scales: {
                 y: {
                     beginAtZero: true,
-                    grid: { color: 'rgba(255, 255, 255, 0.05)' },
-                    ticks: { color: '#8b92b6' }
+                    grid: { color: 'rgba(255, 255, 255, 0.03)' },
+                    ticks: { color: '#7982a9' }
                 },
                 x: {
                     grid: { display: false },
-                    ticks: { color: '#8b92b6', maxTicksLimit: 10 }
+                    ticks: { color: '#7982a9', maxTicksLimit: 12 }
                 }
             },
             plugins: {
                 legend: {
-                    labels: { color: '#8b92b6' }
+                    labels: { color: '#7982a9', font: { family: 'Plus Jakarta Sans', weight: 600 } }
                 }
             }
         }
