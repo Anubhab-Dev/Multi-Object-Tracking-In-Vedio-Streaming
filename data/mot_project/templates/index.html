@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AerialMOT - Multi-Object Video Streaming & Tracking</title>
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Chart.js CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- CSS -->
+    <link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body>
+    <div class="app-container">
+        <!-- Sidebar Controls -->
+        <aside class="sidebar">
+            <div class="logo-area">
+                <span class="logo-icon">🛰️</span>
+                <div class="logo-text">
+                    <h1>AerialMOT</h1>
+                    <span class="subtitle">Multi-Object Tracker</span>
+                </div>
+            </div>
+            
+            <hr class="divider">
+            
+            <!-- Model Settings -->
+            <section class="control-group">
+                <h3>Model Settings</h3>
+                <div class="input-field">
+                    <label for="model-select">Active Model</label>
+                    <select id="model-select">
+                        <option value="yolov8n.pt" selected>YOLOv8 Nano (Base Model)</option>
+                        <option value="runs/detect/train/weights/best.pt">Finetuned VisDrone Model</option>
+                    </select>
+                </div>
+                
+                <div class="input-field">
+                    <label for="tracker-select">Tracker Engine</label>
+                    <select id="tracker-select">
+                        <option value="bytetrack.yaml" selected>ByteTrack (High Speed)</option>
+                        <option value="botsort.yaml">BoT-SORT (High Accuracy)</option>
+                    </select>
+                </div>
+                
+                <div class="input-field">
+                    <div class="slider-header">
+                        <label for="conf-slider">Confidence Threshold</label>
+                        <span id="conf-val">0.25</span>
+                    </div>
+                    <input type="range" id="conf-slider" min="0.05" max="0.95" step="0.05" value="0.25">
+                </div>
+            </section>
+            
+            <!-- Video Input -->
+            <section class="control-group">
+                <h3>Video Feed Control</h3>
+                <div class="upload-area" id="upload-zone">
+                    <svg class="upload-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path>
+                    </svg>
+                    <p>Drag video here or click to upload</p>
+                    <input type="file" id="video-file-input" accept="video/*" style="display: none;">
+                </div>
+                
+                <div id="file-info" class="file-info hidden">
+                    <span class="file-name" id="file-name-label">filename.mp4</span>
+                    <button class="btn btn-icon" id="clear-file-btn">✕</button>
+                </div>
+                
+                <div class="stream-buttons">
+                    <button class="btn btn-primary" id="start-btn">Start Stream</button>
+                    <button class="btn btn-secondary" id="stop-btn">Stop</button>
+                </div>
+            </section>
+            
+            <!-- Hardware status -->
+            <div class="hardware-card">
+                <div class="status-indicator-container">
+                    <span class="pulse-dot green"></span>
+                    <span>Device: <strong id="device-label">Apple M2 GPU (MPS)</strong></span>
+                </div>
+            </div>
+        </aside>
+
+        <!-- Main Dashboard View -->
+        <main class="main-content">
+            <!-- Header Grid Stats -->
+            <header class="dashboard-header">
+                <div class="stat-card">
+                    <div class="stat-header">
+                        <span class="stat-title">Active Tracks</span>
+                        <span class="stat-icon">🎯</span>
+                    </div>
+                    <div class="stat-value" id="stat-tracks">0</div>
+                    <div class="stat-desc">Objects currently being tracked</div>
+                </div>
+                
+                <div class="stat-card">
+                    <div class="stat-header">
+                        <span class="stat-title">Frame Rate</span>
+                        <span class="stat-icon">⚡</span>
+                    </div>
+                    <div class="stat-value"><span id="stat-fps">0.0</span> <span class="unit">FPS</span></div>
+                    <div class="stat-desc">Real-time processing speed</div>
+                </div>
+                
+                <div class="stat-card">
+                    <div class="stat-header">
+                        <span class="stat-title">GPU Latency</span>
+                        <span class="stat-icon">⏱️</span>
+                    </div>
+                    <div class="stat-value"><span id="stat-latency">0</span> <span class="unit">ms</span></div>
+                    <div class="stat-desc">Inference processing delay</div>
+                </div>
+            </header>
+            
+            <!-- Content Panel -->
+            <div class="dashboard-grid">
+                <!-- Video Monitor Box -->
+                <div class="card video-card">
+                    <div class="card-header">
+                        <h2>Live Track Stream Monitor</h2>
+                        <div class="badge" id="stream-status">Offline</div>
+                    </div>
+                    <div class="video-container">
+                        <div class="video-placeholder" id="placeholder-text">
+                            <span class="big-icon">📹</span>
+                            <p>Configure model settings and click "Start Stream" to begin multi-object tracking</p>
+                        </div>
+                        <img id="video-player" class="video-player hidden" src="" alt="Tracking feed">
+                    </div>
+                </div>
+                
+                <!-- Analytics Charts Box -->
+                <div class="card chart-card">
+                    <div class="card-header">
+                        <h2>Real-time Object Counts</h2>
+                    </div>
+                    <div class="chart-container">
+                        <canvas id="classChart"></canvas>
+                    </div>
+                </div>
+                
+                <!-- Tracker timeline chart -->
+                <div class="card chart-card-large">
+                    <div class="card-header">
+                        <h2>Tracking Count Over Time</h2>
+                    </div>
+                    <div class="chart-container-large">
+                        <canvas id="timelineChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+    
+    <script src="/static/js/main.js"></script>
+</body>
+</html>
