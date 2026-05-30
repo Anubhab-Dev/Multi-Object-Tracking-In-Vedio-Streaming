@@ -11,7 +11,7 @@
     <!-- Chart.js CDN -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <!-- CSS -->
-    <link rel="stylesheet" href="/static/css/style.css">
+    <link rel="stylesheet" href="{{ url_for('static', path='/css/style.css') }}">
 </head>
 <body class="dark-theme">
     <!-- Ambient Background Glows -->
@@ -411,6 +411,6 @@
     </div>
 
     <!-- Main Controller Script -->
-    <script src="/static/js/main.js"></script>
+    <script src="{{ url_for('static', path='/js/main.js') }}"></script>
 </body>
 </html>
