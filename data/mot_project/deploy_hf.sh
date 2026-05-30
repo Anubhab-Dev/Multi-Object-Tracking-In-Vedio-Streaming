@@ -46,6 +46,14 @@ cd "$DEPLOY_DIR"
 git init -b main
 git remote add origin "$HF_REPO_URL"
 
+# Initialize Git LFS for binary files
+git lfs install
+git lfs track "*.pt"
+git lfs track "*.png"
+git lfs track "*.jpg"
+git lfs track "*.jpeg"
+
+
 echo ""
 echo "Files staged for deployment. To deploy, we will push this commit to Hugging Face."
 echo "Hugging Face might ask you for your Username and Password (use your Access Token as the password)."
