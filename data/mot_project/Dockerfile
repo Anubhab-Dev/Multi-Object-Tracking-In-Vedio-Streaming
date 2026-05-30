@@ -33,5 +33,5 @@ COPY --chown=user:user . .
 # Expose port 7860 (Hugging Face Spaces default port)
 EXPOSE 7860
 
-# Run the application with uvicorn, binding to port 7860
-CMD ["uvicorn", "app:app", "--host", "0.0.0.0", "--port", "7860"]
+# Run the application with uvicorn, binding to port 7860 and enabling proxy headers
+CMD ["uvicorn", "app:app", "--host", "0.0.0.0", "--port", "7860", "--proxy-headers", "--forwarded-allow-ips", "*"]
