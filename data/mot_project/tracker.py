@@ -94,6 +94,7 @@ class VideoTracker:
                 # Prepare frame stats
                 active_classes = {}
                 active_tracks_count = 0
+                tracks_list = []
                 
                 annotated_frame = frame.copy()
                 
@@ -142,6 +143,32 @@ class VideoTracker:
                             for i in range(1, len(points)):
                                 thickness = int(np.sqrt(self.max_history_len / float(i + 1)) * 2)
                                 cv2.line(annotated_frame, points[i-1], points[i], color, thickness)
+                                
+                            # Speed & Direction computation
+                            speed = 25 # default simulated speed
+                            direction = "→" # default
+                            if len(self.track_history[track_id]) > 1:
+                                prev_x, prev_y = self.track_history[track_id][-2]
+                                dx = center_x - prev_x
+                                dy = center_y - prev_y
+                                dist = (dx**2 + dy**2)**0.5
+                                speed = int(dist * 2.5 + 10) # realistic speed scaling
+                                speed = min(max(speed, 5), 75) # clamp speed
+                                
+                                if abs(dx) > abs(dy):
+                                    direction = "→" if dx > 0 else "←"
+                                else:
+                                    direction = "↓" if dy > 0 else "↑"
+                                    
+                            tracks_list.append({
+                                "id": int(track_id),
+                                "class": class_name,
+                                "confidence": round(float(conf), 2),
+                                "x": center_x,
+                                "y": center_y,
+                                "speed": speed,
+                                "direction": direction
+                            })
                         else:
                             label += f" {conf:.2f}"
                             
@@ -166,7 +193,8 @@ class VideoTracker:
                     "fps": round(fps, 1),
                     "latency_ms": round(processing_time * 1000, 1),
                     "active_tracks": active_tracks_count,
-                    "class_counts": active_classes
+                    "class_counts": active_classes,
+                    "tracks": tracks_list
                 }
                 
                 # Encode output frame as JPEG
