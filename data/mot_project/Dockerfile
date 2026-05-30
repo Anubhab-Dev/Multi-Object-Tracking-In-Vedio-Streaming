@@ -30,12 +30,6 @@ RUN python -c "from ultralytics import YOLO; YOLO('yolov8n.pt')"
 # Copy the rest of the project files
 COPY --chown=user:user . .
 
-# Fix the symlink for model weights inside the Docker container
-RUN rm -rf runs/detect/train && \
-    if [ -d "runs/detect/runs/detect/train" ]; then \
-        cp -r runs/detect/runs/detect/train runs/detect/train; \
-    fi
-
 # Expose port 7860 (Hugging Face Spaces default port)
 EXPOSE 7860
 

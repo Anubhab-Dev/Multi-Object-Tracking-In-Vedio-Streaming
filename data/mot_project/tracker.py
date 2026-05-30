@@ -109,7 +109,7 @@ class VideoTracker:
                         track_ids = [None] * len(boxes)
                         
                     for xyxy, cls_id, conf, track_id in zip(xyxys, cls_ids, confs, track_ids):
-                        class_name = CLASS_NAMES.get(cls_id, "unknown")
+                        class_name = self.model.names.get(cls_id, "unknown")
                         active_classes[class_name] = active_classes.get(class_name, 0) + 1
                         
                         # Draw bounding box and tracking info

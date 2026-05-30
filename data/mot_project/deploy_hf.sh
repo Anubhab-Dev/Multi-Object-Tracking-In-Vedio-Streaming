@@ -34,14 +34,10 @@ cp hf_README.md "$DEPLOY_DIR/README.md"
 cp -r templates "$DEPLOY_DIR/"
 cp -r static "$DEPLOY_DIR/"
 
-# Copy model weights (resolving symlinks to actual files)
-mkdir -p "$DEPLOY_DIR/runs/detect"
-if [ -d "runs/detect/runs/detect/train" ]; then
+# Copy model weights
+if [ -d "runs/detect/train" ]; then
     echo "Copying finetuned model weights..."
-    cp -r runs/detect/runs/detect/train "$DEPLOY_DIR/runs/detect/train"
-elif [ -d "runs/detect/train" ]; then
-    echo "Copying finetuned model weights..."
-    cp -RL runs/detect/train "$DEPLOY_DIR/runs/detect/train"
+    cp -r runs/detect/train "$DEPLOY_DIR/runs/detect/train"
 fi
 
 # Initialize git repo in the deploy directory
