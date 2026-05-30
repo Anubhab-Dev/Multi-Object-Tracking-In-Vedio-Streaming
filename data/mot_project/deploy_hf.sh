@@ -37,7 +37,8 @@ cp -r static "$DEPLOY_DIR/"
 # Copy model weights
 if [ -d "runs/detect/train" ]; then
     echo "Copying finetuned model weights..."
-    cp -r runs/detect/train "$DEPLOY_DIR/runs/detect/train"
+    mkdir -p "$DEPLOY_DIR/runs/detect"
+    cp -r runs/detect/train "$DEPLOY_DIR/runs/detect/"
 fi
 
 # Initialize git repo in the deploy directory
