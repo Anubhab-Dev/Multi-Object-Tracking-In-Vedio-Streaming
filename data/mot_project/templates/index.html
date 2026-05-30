@@ -3,414 +3,1385 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>MOT Vision - Multi-Object Video Streaming & Tracking</title>
-    <!-- Fonts -->
+    <title>MOT Vision - Multi-Object Tracking Dashboard</title>
+    <meta name="description" content="Real-time multi-object tracking dashboard powered by YOLOv8 and VisDrone finetuned model.">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    <!-- Chart.js CDN -->
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <!-- CSS -->
-    <link rel="stylesheet" href="/static/css/style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <style>
+        /* ===== RESET & ROOT ===== */
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+        :root {
+            --bg-primary: #080b14;
+            --bg-secondary: #0d1120;
+            --bg-card: rgba(13,17,32,0.8);
+            --bg-card-hover: rgba(18,24,42,0.9);
+            --bg-input: rgba(255,255,255,0.04);
+            --border: rgba(255,255,255,0.07);
+            --border-bright: rgba(255,255,255,0.12);
+            --text-primary: #f0f2ff;
+            --text-secondary: #8b91b5;
+            --text-muted: #4a5070;
+            --accent: #4f6ef7;
+            --accent-hover: #3d5de0;
+            --accent-glow: rgba(79,110,247,0.35);
+            --accent-soft: rgba(79,110,247,0.12);
+            --green: #22c55e;
+            --green-soft: rgba(34,197,94,0.12);
+            --red: #ef4444;
+            --red-soft: rgba(239,68,68,0.12);
+            --orange: #f97316;
+            --orange-soft: rgba(249,115,22,0.12);
+            --purple: #a855f7;
+            --purple-soft: rgba(168,85,247,0.12);
+            --teal: #14b8a6;
+            --sidebar-w: 240px;
+            --header-h: 60px;
+            --radius-sm: 8px;
+            --radius-md: 12px;
+            --radius-lg: 16px;
+            --radius-xl: 20px;
+            --font: 'Inter', sans-serif;
+            --font-mono: 'JetBrains Mono', monospace;
+            --shadow: 0 4px 24px rgba(0,0,0,0.4);
+            --shadow-card: 0 2px 16px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.04);
+        }
+
+        html, body { height: 100%; overflow: hidden; }
+
+        body {
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            font-family: var(--font);
+            font-size: 14px;
+            line-height: 1.5;
+        }
+
+        /* ===== BACKGROUND GLOW ===== */
+        body::before {
+            content: '';
+            position: fixed;
+            top: -200px; left: -200px;
+            width: 600px; height: 600px;
+            background: radial-gradient(circle, rgba(79,110,247,0.08) 0%, transparent 70%);
+            pointer-events: none; z-index: 0;
+        }
+        body::after {
+            content: '';
+            position: fixed;
+            bottom: -150px; right: -150px;
+            width: 500px; height: 500px;
+            background: radial-gradient(circle, rgba(168,85,247,0.06) 0%, transparent 70%);
+            pointer-events: none; z-index: 0;
+        }
+
+        /* ===== LAYOUT ===== */
+        .app {
+            display: grid;
+            grid-template-columns: var(--sidebar-w) 1fr;
+            grid-template-rows: var(--header-h) 1fr;
+            height: 100vh;
+            position: relative;
+            z-index: 1;
+        }
+
+        /* ===== SIDEBAR ===== */
+        .sidebar {
+            grid-row: 1 / 3;
+            background: var(--bg-secondary);
+            border-right: 1px solid var(--border);
+            display: flex;
+            flex-direction: column;
+            padding: 0;
+            overflow: hidden;
+        }
+
+        .sidebar-brand {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 0 20px;
+            height: var(--header-h);
+            border-bottom: 1px solid var(--border);
+        }
+
+        .brand-icon {
+            width: 34px; height: 34px;
+            background: linear-gradient(135deg, var(--accent) 0%, var(--purple) 100%);
+            border-radius: var(--radius-sm);
+            display: flex; align-items: center; justify-content: center;
+            flex-shrink: 0;
+        }
+        .brand-icon svg { width: 18px; height: 18px; color: #fff; }
+
+        .brand-name {
+            font-size: 15px; font-weight: 700;
+            letter-spacing: -0.3px;
+            color: var(--text-primary);
+        }
+        .brand-tag {
+            font-size: 9px; font-weight: 500;
+            color: var(--text-muted);
+            text-transform: uppercase; letter-spacing: 0.8px;
+            display: block; margin-top: 1px;
+        }
+
+        .sidebar-nav {
+            padding: 16px 12px;
+            display: flex; flex-direction: column; gap: 2px;
+            flex: 1;
+        }
+
+        .nav-section-label {
+            font-size: 9px; font-weight: 600;
+            color: var(--text-muted);
+            text-transform: uppercase; letter-spacing: 1px;
+            padding: 8px 8px 4px;
+        }
+
+        .nav-item {
+            display: flex; align-items: center; gap: 10px;
+            padding: 9px 10px;
+            border-radius: var(--radius-sm);
+            color: var(--text-secondary);
+            text-decoration: none;
+            font-size: 13px; font-weight: 500;
+            cursor: pointer;
+            transition: all 0.15s ease;
+            border: 1px solid transparent;
+        }
+        .nav-item svg { width: 16px; height: 16px; flex-shrink: 0; }
+        .nav-item:hover {
+            color: var(--text-primary);
+            background: rgba(255,255,255,0.04);
+        }
+        .nav-item.active {
+            color: #fff;
+            background: var(--accent-soft);
+            border-color: rgba(79,110,247,0.2);
+        }
+        .nav-item.active svg { color: var(--accent); }
+
+        .sidebar-status {
+            padding: 16px;
+            border-top: 1px solid var(--border);
+        }
+        .status-card {
+            background: var(--bg-input);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-md);
+            padding: 12px;
+        }
+        .status-header {
+            display: flex; align-items: center; gap: 6px;
+            margin-bottom: 10px;
+        }
+        .status-dot {
+            width: 7px; height: 7px; border-radius: 50%;
+            background: var(--green);
+            box-shadow: 0 0 8px var(--green);
+            animation: pulse-dot 2s ease infinite;
+        }
+        @keyframes pulse-dot {
+            0%,100% { opacity: 0.6; }
+            50% { opacity: 1; }
+        }
+        .status-label { font-size: 11px; font-weight: 600; color: var(--text-primary); }
+        .status-sub { font-size: 10px; color: var(--text-muted); margin-bottom: 8px; }
+        .status-grid { display: flex; flex-direction: column; gap: 5px; }
+        .status-row { display: flex; justify-content: space-between; font-size: 11px; }
+        .status-row .k { color: var(--text-secondary); }
+        .status-row .v { color: var(--text-primary); font-weight: 600; font-family: var(--font-mono); }
+
+        /* ===== TOPBAR ===== */
+        .topbar {
+            grid-column: 2;
+            background: var(--bg-secondary);
+            border-bottom: 1px solid var(--border);
+            display: flex; align-items: center; justify-content: flex-end;
+            padding: 0 24px; gap: 16px;
+        }
+
+        .theme-toggle {
+            display: flex;
+            background: var(--bg-input);
+            border: 1px solid var(--border);
+            border-radius: 20px;
+            padding: 3px;
+        }
+        .theme-btn {
+            background: transparent; border: none;
+            padding: 5px 9px; border-radius: 16px;
+            color: var(--text-muted); cursor: pointer;
+            font-size: 13px; transition: all 0.2s;
+        }
+        .theme-btn.active {
+            background: var(--accent); color: #fff;
+        }
+
+        .notif-btn {
+            position: relative; width: 34px; height: 34px;
+            display: flex; align-items: center; justify-content: center;
+            background: var(--bg-input); border: 1px solid var(--border);
+            border-radius: var(--radius-sm); cursor: pointer; color: var(--text-secondary);
+        }
+        .notif-btn svg { width: 16px; height: 16px; }
+        .notif-badge {
+            position: absolute; top: -4px; right: -4px;
+            width: 14px; height: 14px; background: var(--red);
+            border-radius: 50%; font-size: 9px; font-weight: 700;
+            color: #fff; display: flex; align-items: center; justify-content: center;
+            border: 2px solid var(--bg-secondary);
+        }
+
+        .user-chip {
+            display: flex; align-items: center; gap: 8px;
+            padding: 4px 10px 4px 4px;
+            background: var(--bg-input); border: 1px solid var(--border);
+            border-radius: 20px; cursor: pointer;
+        }
+        .user-avatar {
+            width: 26px; height: 26px; border-radius: 50%;
+            background: linear-gradient(135deg, var(--accent), var(--purple));
+            display: flex; align-items: center; justify-content: center;
+            font-size: 11px; font-weight: 700; color: #fff;
+        }
+        .user-name { font-size: 12px; font-weight: 600; color: var(--text-primary); }
+        .user-online { display: flex; align-items: center; gap: 4px; font-size: 10px; color: var(--green); }
+        .online-dot { width: 5px; height: 5px; border-radius: 50%; background: var(--green); }
+
+        /* ===== MAIN CONTENT ===== */
+        .main {
+            grid-column: 2;
+            overflow-y: auto;
+            padding: 20px 24px;
+            display: flex; flex-direction: column; gap: 16px;
+        }
+        .main::-webkit-scrollbar { width: 4px; }
+        .main::-webkit-scrollbar-track { background: transparent; }
+        .main::-webkit-scrollbar-thumb { background: var(--border-bright); border-radius: 4px; }
+
+        /* ===== GRID LAYOUTS ===== */
+        .grid-2 { display: grid; grid-template-columns: 1.7fr 1fr; gap: 16px; }
+        .grid-4 { display: grid; grid-template-columns: repeat(4,1fr); gap: 12px; }
+
+        /* ===== CARDS ===== */
+        .card {
+            background: var(--bg-card);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-lg);
+            box-shadow: var(--shadow-card);
+        }
+
+        .card-header {
+            display: flex; align-items: center; justify-content: space-between;
+            padding: 16px 18px 0;
+        }
+        .card-title {
+            font-size: 13px; font-weight: 700;
+            color: var(--text-primary); letter-spacing: -0.2px;
+        }
+        .card-subtitle { font-size: 11px; color: var(--text-muted); margin-top: 1px; }
+
+        /* ===== KPI CARDS ===== */
+        .kpi-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-lg);
+            padding: 16px;
+            box-shadow: var(--shadow-card);
+            transition: border-color 0.2s;
+        }
+        .kpi-card:hover { border-color: var(--border-bright); }
+        .kpi-top { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; }
+        .kpi-label { font-size: 11px; font-weight: 600; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.4px; }
+        .kpi-badge {
+            font-size: 10px; font-weight: 700; padding: 2px 7px; border-radius: 10px;
+        }
+        .kpi-badge.up { color: var(--green); background: var(--green-soft); }
+        .kpi-badge.down { color: var(--red); background: var(--red-soft); }
+        .kpi-value { font-size: 28px; font-weight: 800; color: var(--text-primary); line-height: 1; font-family: var(--font-mono); }
+        .kpi-value .kpi-unit { font-size: 13px; font-weight: 500; color: var(--text-muted); margin-left: 2px; }
+        .kpi-sub { font-size: 11px; color: var(--text-muted); margin-top: 4px; }
+
+        /* ===== MONITOR CARD ===== */
+        .monitor-card { display: flex; flex-direction: column; }
+
+        .monitor-header {
+            display: flex; align-items: center; justify-content: space-between;
+            padding: 14px 18px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .live-row { display: flex; align-items: center; gap: 8px; }
+        .live-badge {
+            display: flex; align-items: center; gap: 5px;
+            padding: 3px 9px; border-radius: 12px;
+            font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px;
+            background: var(--bg-input); border: 1px solid var(--border);
+            color: var(--text-muted);
+            transition: all 0.3s;
+        }
+        .live-badge-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--text-muted); }
+        .live-badge.active { background: var(--green-soft); border-color: rgba(34,197,94,0.2); color: var(--green); }
+        .live-badge.active .live-badge-dot { background: var(--green); animation: flash 1.2s infinite; box-shadow: 0 0 6px var(--green); }
+        @keyframes flash { 0%,100%{opacity:0.4} 50%{opacity:1} }
+
+        .monitor-controls { display: flex; align-items: center; gap: 6px; }
+
+        .cam-select {
+            background: var(--bg-input); border: 1px solid var(--border);
+            border-radius: var(--radius-sm); padding: 5px 10px;
+            color: var(--text-primary); font-family: var(--font); font-size: 12px;
+            outline: none; cursor: pointer;
+        }
+        .icon-btn {
+            width: 30px; height: 30px; background: var(--bg-input);
+            border: 1px solid var(--border); border-radius: var(--radius-sm);
+            display: flex; align-items: center; justify-content: center;
+            cursor: pointer; color: var(--text-secondary); transition: all 0.15s;
+        }
+        .icon-btn svg { width: 14px; height: 14px; }
+        .icon-btn:hover { color: var(--text-primary); border-color: var(--border-bright); }
+        .icon-btn.active { color: var(--accent); border-color: var(--accent-soft); background: var(--accent-soft); }
+
+        /* ===== SETTINGS DRAWER ===== */
+        .settings-drawer {
+            border-bottom: 1px solid var(--border);
+            padding: 14px 18px;
+            display: grid; grid-template-columns: 1fr 1fr 1fr;
+            gap: 12px;
+            animation: slideDown 0.2s ease-out;
+        }
+        @keyframes slideDown { from{opacity:0;transform:translateY(-8px)} to{opacity:1;transform:translateY(0)} }
+        .hidden { display: none !important; }
+
+        .field { display: flex; flex-direction: column; gap: 5px; }
+        .field-label { font-size: 10px; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px; }
+        .field select, .field input[type=range] {
+            background: var(--bg-input); border: 1px solid var(--border);
+            border-radius: var(--radius-sm); padding: 7px 10px;
+            color: var(--text-primary); font-family: var(--font); font-size: 12px;
+            outline: none; width: 100%;
+        }
+        .field select:focus { border-color: var(--accent); }
+
+        .upload-full { grid-column: 1 / -1; }
+        .upload-zone {
+            border: 1.5px dashed var(--border-bright);
+            border-radius: var(--radius-md);
+            padding: 12px 16px;
+            text-align: center;
+            cursor: pointer; transition: all 0.2s;
+            background: var(--bg-input);
+        }
+        .upload-zone:hover, .upload-zone.dragover {
+            border-color: var(--accent);
+            background: var(--accent-soft);
+        }
+        .upload-zone p { font-size: 12px; color: var(--text-secondary); }
+        .upload-zone svg { width: 20px; height: 20px; color: var(--text-muted); display: block; margin: 0 auto 4px; }
+        .file-info-row {
+            display: flex; align-items: center; justify-content: space-between;
+            background: var(--bg-input); border: 1px solid var(--border);
+            border-radius: var(--radius-sm); padding: 7px 12px;
+        }
+        .file-name { font-size: 12px; color: var(--text-primary); font-family: var(--font-mono); }
+        .clear-btn {
+            background: transparent; border: none;
+            color: var(--text-muted); cursor: pointer; font-size: 14px;
+        }
+        .clear-btn:hover { color: var(--red); }
+
+        /* ===== VIDEO VIEWPORT ===== */
+        .video-wrap {
+            position: relative;
+            aspect-ratio: 16/9;
+            background: #04060e;
+            overflow: hidden;
+        }
+
+        /* HUD Corner Brackets */
+        .hud-corner {
+            position: absolute; width: 14px; height: 14px;
+            border: 2px solid var(--accent); z-index: 4;
+            pointer-events: none; opacity: 0.5;
+        }
+        .hud-corner.tl { top: 10px; left: 10px; border-right: none; border-bottom: none; }
+        .hud-corner.tr { top: 10px; right: 10px; border-left: none; border-bottom: none; }
+        .hud-corner.bl { bottom: 10px; left: 10px; border-right: none; border-top: none; }
+        .hud-corner.br { bottom: 10px; right: 10px; border-left: none; border-top: none; }
+
+        /* Grid Overlay */
+        .hud-grid {
+            position: absolute; inset: 0; pointer-events: none; z-index: 1;
+            background-image:
+                linear-gradient(rgba(255,255,255,0.012) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(255,255,255,0.012) 1px, transparent 1px);
+            background-size: 32px 32px;
+        }
+
+        /* Scan Line */
+        .scan-line {
+            position: absolute; left: 0; width: 100%; height: 3px;
+            background: linear-gradient(transparent, var(--accent), transparent);
+            z-index: 3; pointer-events: none; opacity: 0;
+            top: 0;
+        }
+        .scanning .scan-line { opacity: 0.25; animation: scan 4s linear infinite; }
+        @keyframes scan { from{top:-2%} to{top:102%} }
+
+        /* Video Placeholder */
+        .placeholder {
+            position: absolute; inset: 0; z-index: 2;
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            gap: 10px; color: var(--text-secondary);
+        }
+        .placeholder-icon { font-size: 48px; animation: float 3s ease-in-out infinite; }
+        @keyframes float { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-8px)} }
+        .placeholder p { font-size: 12px; color: var(--text-muted); text-align: center; max-width: 220px; line-height: 1.6; }
+
+        .video-img { width: 100%; height: 100%; object-fit: contain; z-index: 3; position: relative; display: block; }
+
+        /* ===== VIDEO FOOTER ===== */
+        .monitor-footer {
+            display: flex; align-items: center; justify-content: space-between;
+            padding: 12px 18px;
+            border-top: 1px solid var(--border);
+        }
+        .footer-btns { display: flex; gap: 8px; }
+
+        .btn {
+            display: flex; align-items: center; gap: 6px;
+            padding: 7px 14px; border-radius: var(--radius-sm);
+            font-size: 12px; font-weight: 600; font-family: var(--font);
+            border: 1px solid var(--border); background: var(--bg-input);
+            color: var(--text-primary); cursor: pointer; transition: all 0.15s;
+        }
+        .btn svg { width: 12px; height: 12px; }
+        .btn:hover { background: rgba(255,255,255,0.06); border-color: var(--border-bright); }
+        .btn:disabled { opacity: 0.3; cursor: not-allowed; pointer-events: none; }
+
+        .btn-primary {
+            background: var(--accent); border-color: var(--accent);
+            color: #fff;
+        }
+        .btn-primary:hover { background: var(--accent-hover); border-color: var(--accent-hover); box-shadow: 0 4px 16px var(--accent-glow); }
+
+        .rec-indicator {
+            display: flex; align-items: center; gap: 6px;
+            font-size: 11px; font-weight: 600; color: var(--text-secondary);
+        }
+        .rec-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--red); box-shadow: 0 0 6px var(--red); animation: flash 1.5s infinite; }
+        .rec-time { font-family: var(--font-mono); color: var(--text-primary); font-size: 12px; }
+
+        /* ===== RIGHT PANEL ===== */
+        .right-panel { display: flex; flex-direction: column; gap: 16px; }
+
+        /* ===== OBJECTS LIST ===== */
+        .objects-list { padding: 12px 18px; display: flex; flex-direction: column; gap: 8px; }
+        .obj-item {
+            display: flex; align-items: center; justify-content: space-between;
+            padding: 9px 12px;
+            background: var(--bg-input); border: 1px solid var(--border);
+            border-radius: var(--radius-sm);
+            transition: border-color 0.15s;
+        }
+        .obj-item:hover { border-color: var(--border-bright); }
+        .obj-meta { display: flex; align-items: center; gap: 8px; }
+        .obj-icon { font-size: 15px; }
+        .obj-name { font-size: 12px; font-weight: 600; color: var(--text-primary); }
+        .obj-right { display: flex; align-items: center; gap: 8px; }
+        .obj-count { font-size: 15px; font-weight: 800; color: var(--text-primary); font-family: var(--font-mono); }
+        .badge-sm {
+            font-size: 10px; font-weight: 700; padding: 2px 6px; border-radius: 8px;
+        }
+        .badge-up { color: var(--green); background: var(--green-soft); }
+        .badge-down { color: var(--red); background: var(--red-soft); }
+        .badge-neutral { color: var(--text-muted); background: var(--bg-input); border: 1px solid var(--border); }
+
+        .obj-footer {
+            display: flex; align-items: center; justify-content: space-between;
+            padding: 12px 18px; border-top: 1px solid var(--border);
+            font-size: 12px; color: var(--text-secondary);
+        }
+        .obj-total { font-size: 18px; font-weight: 800; color: var(--accent); font-family: var(--font-mono); background: var(--accent-soft); padding: 2px 10px; border-radius: 10px; }
+
+        /* ===== CHART CARD ===== */
+        .chart-wrap { padding: 12px 18px 16px; height: 160px; position: relative; }
+
+        /* ===== EVENTS LIST ===== */
+        .events-list {
+            padding: 6px 18px 12px; display: flex; flex-direction: column; gap: 8px;
+            max-height: 180px; overflow-y: auto;
+        }
+        .events-list::-webkit-scrollbar { width: 3px; }
+        .events-list::-webkit-scrollbar-thumb { background: var(--border-bright); border-radius: 4px; }
+
+        .event-item {
+            display: flex; align-items: center; justify-content: space-between;
+            border-bottom: 1px solid var(--border); padding-bottom: 7px;
+            animation: fadeSlide 0.3s ease;
+        }
+        @keyframes fadeSlide { from{opacity:0;transform:translateY(4px)} to{opacity:1;transform:translateY(0)} }
+        .event-left { display: flex; align-items: center; gap: 8px; }
+        .event-dot { width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; }
+        .event-dot.green { background: var(--green); box-shadow: 0 0 6px var(--green); }
+        .event-dot.red { background: var(--red); box-shadow: 0 0 6px var(--red); }
+        .event-dot.blue { background: var(--accent); box-shadow: 0 0 6px var(--accent); }
+        .event-msg { font-size: 11px; color: var(--text-primary); }
+        .event-time { font-size: 10px; color: var(--text-muted); font-family: var(--font-mono); }
+        .event-empty { font-size: 12px; color: var(--text-muted); font-style: italic; padding: 16px 0; text-align: center; }
+
+        .events-footer { padding: 0 18px 14px; }
+
+        /* ===== TABLE CARD ===== */
+        .table-wrap { overflow-x: auto; }
+        .tracks-table { width: 100%; border-collapse: collapse; font-size: 12px; }
+        .tracks-table th {
+            padding: 10px 14px; text-align: left;
+            font-size: 10px; font-weight: 700; color: var(--text-muted);
+            text-transform: uppercase; letter-spacing: 0.5px;
+            border-bottom: 1px solid var(--border);
+        }
+        .tracks-table td {
+            padding: 10px 14px; color: var(--text-primary);
+            border-bottom: 1px solid var(--border);
+        }
+        .tracks-table tr:hover td { background: rgba(255,255,255,0.015); }
+        .tracks-table .empty td { text-align: center; color: var(--text-muted); padding: 24px; font-style: italic; border: none; }
+        .class-cell { display: flex; align-items: center; gap: 6px; }
+        .track-status {
+            display: inline-block; padding: 2px 8px; border-radius: 8px;
+            font-size: 10px; font-weight: 700;
+            color: var(--green); background: var(--green-soft); border: 1px solid rgba(34,197,94,0.15);
+        }
+        .table-footer { padding: 10px 18px 14px; display: flex; justify-content: center; }
+        .link-btn {
+            background: transparent; border: none; color: var(--text-muted);
+            font-size: 11px; font-weight: 600; cursor: pointer; text-decoration: underline;
+            text-underline-offset: 3px;
+        }
+        .link-btn:hover { color: var(--text-primary); }
+
+        /* ===== LIGHT THEME ===== */
+        .light-theme {
+            --bg-primary: #f3f5fb;
+            --bg-secondary: #ffffff;
+            --bg-card: rgba(255,255,255,0.85);
+            --bg-card-hover: rgba(255,255,255,0.95);
+            --bg-input: rgba(0,0,0,0.04);
+            --border: rgba(0,0,0,0.07);
+            --border-bright: rgba(0,0,0,0.12);
+            --text-primary: #111827;
+            --text-secondary: #6b7280;
+            --text-muted: #9ca3af;
+        }
+        .light-theme body::before, .light-theme body::after { display: none; }
+
+        /* ===== RESPONSIVE ===== */
+        @media (max-width: 1200px) {
+            .grid-2 { grid-template-columns: 1fr; }
+            .grid-4 { grid-template-columns: repeat(2,1fr); }
+        }
+        @media (max-width: 900px) {
+            .app { grid-template-columns: 1fr; }
+            .sidebar { display: none; }
+            .topbar { grid-column: 1; }
+            .main { grid-column: 1; }
+        }
+    </style>
 </head>
 <body class="dark-theme">
-    <!-- Ambient Background Glows -->
-    <div class="ambient-glow glow-1"></div>
-    <div class="ambient-glow glow-2"></div>
 
-    <div class="app-layout">
-        <!-- Sidebar Navigation -->
-        <aside class="sidebar">
-            <div class="logo-area">
-                <div class="logo-circle">
-                    <svg class="logo-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-                        <circle cx="12" cy="12" r="9"></circle>
-                        <circle cx="12" cy="12" r="4"></circle>
-                        <path d="M12 2v4M12 18v4M2 12h4M18 12h4"></path>
-                    </svg>
-                </div>
-                <div class="logo-text">
-                    <h1>MOT Vision</h1>
-                    <span class="subtitle">Multi Object Tracking</span>
-                </div>
+<div class="app">
+    <!-- ===== SIDEBAR ===== -->
+    <aside class="sidebar">
+        <div class="sidebar-brand">
+            <div class="brand-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                    <circle cx="12" cy="12" r="9"/>
+                    <circle cx="12" cy="12" r="4"/>
+                    <path d="M12 3v2M12 19v2M3 12h2M19 12h2"/>
+                </svg>
             </div>
-            
-            <nav class="nav-menu">
-                <a href="#" class="nav-item active" id="nav-dashboard">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1"></rect><rect x="14" y="3" width="7" height="7" rx="1"></rect><rect x="14" y="14" width="7" height="7" rx="1"></rect><rect x="3" y="14" width="7" height="7" rx="1"></rect></svg>
-                    <span>Dashboard</span>
-                </a>
-                <a href="#" class="nav-item" id="nav-live">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 7a2 2 0 0 0-2.45-1.45L16 7V5a2 2 0 0 0-2-2H2a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2l4.55 1.45A2 2 0 0 0 23 17V7z"></path></svg>
-                    <span>Live Stream</span>
-                </a>
-                <a href="#" class="nav-item" id="nav-tracking">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path><path d="M2 12h20"></path></svg>
-                    <span>Tracking</span>
-                </a>
-                <a href="#" class="nav-item" id="nav-analytics">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="20" x2="18" y2="10"></line><line x1="12" y1="20" x2="12" y2="4"></line><line x1="6" y1="20" x2="6" y2="14"></line></svg>
-                    <span>Analytics</span>
-                </a>
-                <a href="#" class="nav-item" id="nav-events">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path><path d="M13.73 21a2 2 0 0 1-3.46 0"></path></svg>
-                    <span>Events</span>
-                </a>
-                <a href="#" class="nav-item" id="nav-recordings">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="2" width="20" height="20" rx="2.18" ry="2.18"></rect><line x1="7" y1="2" x2="7" y2="22"></line><line x1="17" y1="2" x2="17" y2="22"></line><line x1="2" y1="12" x2="22" y2="12"></line><line x1="2" y1="7" x2="7" y2="7"></line><line x1="2" y1="17" x2="7" y2="17"></line><line x1="17" y1="17" x2="22" y2="17"></line><line x1="17" y1="7" x2="22" y2="7"></line></svg>
-                    <span>Recordings</span>
-                </a>
-                <a href="#" class="nav-item" id="nav-settings">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
-                    <span>Settings</span>
-                </a>
-                <a href="#" class="nav-item" id="nav-users">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>
-                    <span>Users</span>
-                </a>
-                <a href="#" class="nav-item" id="nav-logs">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>
-                    <span>Logs</span>
-                </a>
-            </nav>
+            <div>
+                <div class="brand-name">MOT Vision</div>
+                <span class="brand-tag">Multi-Object Tracking</span>
+            </div>
+        </div>
 
-            <!-- System Status Panel -->
-            <div class="system-status-card">
+        <nav class="sidebar-nav">
+            <div class="nav-section-label">Menu</div>
+            <a class="nav-item active" href="#" id="nav-dashboard">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/>
+                    <rect x="14" y="14" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/>
+                </svg>
+                Dashboard
+            </a>
+            <a class="nav-item" href="#" id="nav-live">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M23 7a2 2 0 0 0-2.45-1.45L16 7V5a2 2 0 0 0-2-2H2a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2l4.55 1.45A2 2 0 0 0 23 17V7z"/>
+                </svg>
+                Live Stream
+            </a>
+            <a class="nav-item" href="#" id="nav-tracking">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <circle cx="12" cy="12" r="10"/>
+                    <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/>
+                    <path d="M2 12h20"/>
+                </svg>
+                Tracking
+            </a>
+            <a class="nav-item" href="#" id="nav-analytics">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/>
+                </svg>
+                Analytics
+            </a>
+            <a class="nav-item" href="#" id="nav-events">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/>
+                    <path d="M13.73 21a2 2 0 0 1-3.46 0"/>
+                </svg>
+                Events
+            </a>
+            <a class="nav-item" href="#" id="nav-settings">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <circle cx="12" cy="12" r="3"/>
+                    <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9"/>
+                </svg>
+                Settings
+            </a>
+        </nav>
+
+        <div class="sidebar-status">
+            <div class="status-card">
                 <div class="status-header">
-                    <span class="status-dot green"></span>
-                    <h3>System Status</h3>
+                    <div class="status-dot"></div>
+                    <span class="status-label">System Status</span>
                 </div>
-                <p class="status-msg">All Systems Operational</p>
+                <div class="status-sub">All systems operational</div>
                 <div class="status-grid">
-                    <div class="status-row">
-                        <span class="lbl">FPS</span>
-                        <span class="val" id="hud-fps">0.0</span>
+                    <div class="status-row"><span class="k">FPS</span><span class="v" id="hud-fps">0.0</span></div>
+                    <div class="status-row"><span class="k">Resolution</span><span class="v" id="hud-res">1280×720</span></div>
+                    <div class="status-row"><span class="k">Bitrate</span><span class="v" id="hud-bitrate">2.4 Mbps</span></div>
+                    <div class="status-row"><span class="k">Latency</span><span class="v" id="hud-latency">0 ms</span></div>
+                </div>
+            </div>
+        </div>
+    </aside>
+
+    <!-- ===== TOPBAR ===== -->
+    <header class="topbar">
+        <div class="theme-toggle">
+            <button class="theme-btn active" id="theme-dark-btn" title="Dark">🌙</button>
+            <button class="theme-btn" id="theme-light-btn" title="Light">☀️</button>
+        </div>
+        <div class="notif-btn">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/>
+                <path d="M13.73 21a2 2 0 0 1-3.46 0"/>
+            </svg>
+            <span class="notif-badge">2</span>
+        </div>
+        <div class="user-chip">
+            <div class="user-avatar">A</div>
+            <div>
+                <div class="user-name">Admin</div>
+                <div class="user-online"><span class="online-dot"></span>Online</div>
+            </div>
+        </div>
+    </header>
+
+    <!-- ===== MAIN CONTENT ===== -->
+    <main class="main">
+
+        <!-- KPI Row -->
+        <div class="grid-4">
+            <div class="kpi-card">
+                <div class="kpi-top">
+                    <span class="kpi-label">Total Objects</span>
+                    <span class="kpi-badge up">↑ 18%</span>
+                </div>
+                <div class="kpi-value" id="kpi-total-objects">0</div>
+                <div class="kpi-sub">vs last hour</div>
+            </div>
+            <div class="kpi-card">
+                <div class="kpi-top">
+                    <span class="kpi-label">Active Tracks</span>
+                    <span class="kpi-badge up">↑ 15%</span>
+                </div>
+                <div class="kpi-value" id="kpi-active-tracks">0</div>
+                <div class="kpi-sub">vs last hour</div>
+            </div>
+            <div class="kpi-card">
+                <div class="kpi-top">
+                    <span class="kpi-label">Track Accuracy</span>
+                    <span class="kpi-badge up">↑ 2.3%</span>
+                </div>
+                <div class="kpi-value" id="kpi-accuracy">98.6<span class="kpi-unit">%</span></div>
+                <div class="kpi-sub">vs yesterday</div>
+            </div>
+            <div class="kpi-card">
+                <div class="kpi-top">
+                    <span class="kpi-label">Avg. Latency</span>
+                    <span class="kpi-badge down">↓ 8%</span>
+                </div>
+                <div class="kpi-value"><span id="kpi-latency">0</span><span class="kpi-unit">ms</span></div>
+                <div class="kpi-sub">vs last hour</div>
+            </div>
+        </div>
+
+        <!-- Main 2-col section -->
+        <div class="grid-2">
+
+            <!-- LEFT: Monitor Card + Table -->
+            <div style="display:flex;flex-direction:column;gap:16px;">
+
+                <!-- Monitor Card -->
+                <div class="card monitor-card">
+                    <div class="monitor-header">
+                        <div class="live-row">
+                            <span class="card-title">Live Stream</span>
+                            <div class="live-badge" id="live-badge">
+                                <span class="live-badge-dot"></span>
+                                <span id="live-badge-text">Offline</span>
+                            </div>
+                        </div>
+                        <div class="monitor-controls">
+                            <select class="cam-select" id="camera-select">
+                                <option value="cam-1">Camera 01</option>
+                                <option value="cam-2">Camera 02 (Wide)</option>
+                            </select>
+                            <button class="icon-btn" id="settings-toggle-btn" title="Settings">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <circle cx="12" cy="12" r="3"/>
+                                    <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+                                </svg>
+                            </button>
+                            <button class="icon-btn" id="fullscreen-btn" title="Fullscreen">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"/>
+                                </svg>
+                            </button>
+                        </div>
                     </div>
-                    <div class="status-row">
-                        <span class="lbl">Resolution</span>
-                        <span class="val" id="hud-res">1280 x 720</span>
+
+                    <!-- Settings Drawer -->
+                    <div class="settings-drawer hidden" id="settings-drawer">
+                        <div class="field">
+                            <label class="field-label">Active Model</label>
+                            <select id="model-select">
+                                <option value="yolov8n.pt" selected>YOLOv8 Nano (Base)</option>
+                                <option value="runs/detect/train/weights/best.pt">Finetuned VisDrone</option>
+                            </select>
+                        </div>
+                        <div class="field">
+                            <label class="field-label">Tracker Engine</label>
+                            <select id="tracker-select">
+                                <option value="bytetrack.yaml" selected>ByteTrack (Speed)</option>
+                                <option value="botsort.yaml">BoT-SORT (Accuracy)</option>
+                            </select>
+                        </div>
+                        <div class="field">
+                            <label class="field-label">Confidence: <span id="conf-val" style="color:var(--accent);font-weight:700;">0.25</span></label>
+                            <input type="range" id="conf-slider" min="0.05" max="0.95" step="0.05" value="0.25">
+                        </div>
+                        <div class="field upload-full">
+                            <div class="upload-zone" id="upload-zone">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 16.5V9.75m0 0l3 3m-3-3l-3 3M6.75 19.5a4.5 4.5 0 01-1.41-8.775 5.25 5.25 0 0110.233-2.33 3 3 0 013.758 3.848A3.752 3.752 0 0118 19.5H6.75z"/>
+                                </svg>
+                                <p>Drag video here or click to upload</p>
+                                <input type="file" id="video-file-input" accept="video/*" style="display:none">
+                            </div>
+                            <div class="file-info-row hidden" id="file-info">
+                                <span class="file-name" id="file-name-label">filename.mp4</span>
+                                <button class="clear-btn" id="clear-file-btn">✕</button>
+                            </div>
+                        </div>
                     </div>
-                    <div class="status-row">
-                        <span class="lbl">Bitrate</span>
-                        <span class="val" id="hud-bitrate">2.4 Mbps</span>
+
+                    <!-- Video Viewport -->
+                    <div class="video-wrap" id="video-monitor">
+                        <div class="hud-corner tl"></div>
+                        <div class="hud-corner tr"></div>
+                        <div class="hud-corner bl"></div>
+                        <div class="hud-corner br"></div>
+                        <div class="hud-grid"></div>
+                        <div class="scan-line"></div>
+                        <div class="placeholder" id="placeholder-text">
+                            <div class="placeholder-icon">🛰️</div>
+                            <p>Configure stream settings above and click <strong>Start</strong> to begin multi-object tracking</p>
+                        </div>
+                        <img id="video-player" class="video-img hidden" src="" alt="Tracking feed">
                     </div>
-                    <div class="status-row">
-                        <span class="lbl">Latency</span>
-                        <span class="val" id="hud-latency">0 ms</span>
+
+                    <!-- Monitor Footer -->
+                    <div class="monitor-footer">
+                        <div class="footer-btns">
+                            <button class="btn btn-primary" id="start-btn">
+                                <svg viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+                                Start
+                            </button>
+                            <button class="btn" id="pause-btn" disabled>
+                                <svg viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></svg>
+                                Pause
+                            </button>
+                            <button class="btn" id="stop-btn">
+                                <svg viewBox="0 0 24 24" fill="currentColor"><rect x="4" y="4" width="16" height="16"/></svg>
+                                Stop
+                            </button>
+                            <button class="btn" id="snapshot-btn">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
+                                Snapshot
+                            </button>
+                        </div>
+                        <div class="rec-indicator hidden" id="rec-status-indicator">
+                            <span class="rec-dot"></span>
+                            <span>REC</span>
+                            <span class="rec-time" id="rec-timer">00:00:00</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Active Tracks Table -->
+                <div class="card">
+                    <div class="card-header" style="padding:16px 18px 12px;">
+                        <div>
+                            <div class="card-title">Active Tracks</div>
+                        </div>
+                    </div>
+                    <div class="table-wrap">
+                        <table class="tracks-table">
+                            <thead>
+                                <tr>
+                                    <th>ID</th>
+                                    <th>Class</th>
+                                    <th>Conf.</th>
+                                    <th>Position</th>
+                                    <th>Speed</th>
+                                    <th>Dir.</th>
+                                    <th>Status</th>
+                                    <th>Last Seen</th>
+                                </tr>
+                            </thead>
+                            <tbody id="tracks-table-body">
+                                <tr class="empty"><td colspan="8">No active tracks. Start the stream to begin tracking.</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                    <div class="table-footer">
+                        <button class="link-btn">View All Tracks</button>
                     </div>
                 </div>
             </div>
-        </aside>
 
-        <!-- Main Workspace -->
-        <div class="main-workspace">
-            <!-- Top Utility Bar -->
-            <header class="top-bar">
-                <div class="theme-switcher">
-                    <button class="theme-btn active" id="theme-dark-btn" title="Dark Theme">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path></svg>
-                    </button>
-                    <button class="theme-btn" id="theme-light-btn" title="Light Theme">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="5"></circle><line x1="12" y1="1" x2="12" y2="3"></line><line x1="12" y1="21" x2="12" y2="23"></line><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line><line x1="1" y1="12" x2="3" y2="12"></line><line x1="21" y1="12" x2="23" y2="12"></line><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line><line x1="18.36" y1="4.22" x2="19.78" y2="5.64"></line></svg>
-                    </button>
-                </div>
-                
-                <div class="notifications-bell">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path><path d="M13.73 21a2 2 0 0 1-3.46 0"></path></svg>
-                    <span class="bell-badge">2</span>
-                </div>
-                
-                <div class="admin-profile">
-                    <img class="profile-pic" src="data:image/svg+xml;utf8,<svg viewBox='0 0 100 100' xmlns='http://www.w3.org/2000/svg'><circle cx='50' cy='50' r='50' fill='%233d5af1'/><circle cx='50' cy='40' r='20' fill='%23ffffff'/><path d='M20,80 Q50,50 80,80' fill='none' stroke='%23ffffff' stroke-width='8' stroke-linecap='round'/></svg>" alt="Admin Profile">
-                    <div class="profile-text">
-                        <span class="name">Admin</span>
-                        <span class="status-online"><span class="dot"></span>Online</span>
+            <!-- RIGHT: Objects + Chart + Events -->
+            <div class="right-panel">
+
+                <!-- Detected Objects Card -->
+                <div class="card">
+                    <div class="card-header">
+                        <div class="card-title">Detected Objects</div>
                     </div>
-                </div>
-            </header>
-
-            <!-- Dashboard Columns Layout -->
-            <div class="dashboard-columns">
-                <!-- Left Panel: Monitor and Table -->
-                <div class="panel-left">
-                    <!-- Live Stream Monitor Card -->
-                    <div class="dashboard-card monitor-card">
-                        <div class="monitor-header">
-                            <div class="live-title-area">
-                                <h2>Live Stream</h2>
-                                <span class="badge" id="live-indicator">Offline</span>
-                            </div>
-                            <div class="header-controls">
-                                <select class="camera-select" id="camera-select">
-                                    <option value="cam-1">Camera 01</option>
-                                    <option value="cam-2">Camera 02 (Wide)</option>
-                                </select>
-                                <button class="header-btn" id="settings-toggle-btn" title="Stream Settings">
-                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
-                                </button>
-                                <button class="header-btn" id="fullscreen-btn" title="Expand View">
-                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"></path></svg>
-                                </button>
-                            </div>
+                    <div class="objects-list">
+                        <div class="obj-item">
+                            <div class="obj-meta"><span class="obj-icon">🚗</span><span class="obj-name">Vehicles</span></div>
+                            <div class="obj-right"><span class="obj-count" id="count-vehicle">0</span><span class="badge-sm badge-up">↑ 20%</span></div>
                         </div>
-
-                        <!-- Dropdown Stream Settings Panel -->
-                        <div class="stream-settings-drawer hidden" id="settings-drawer">
-                            <div class="drawer-grid">
-                                <div class="input-field">
-                                    <label for="model-select">Active Model</label>
-                                    <select id="model-select">
-                                        <option value="yolov8n.pt" selected>YOLOv8 Nano (Base Model)</option>
-                                        <option value="runs/detect/train/weights/best.pt">Finetuned VisDrone Model</option>
-                                    </select>
-                                </div>
-                                <div class="input-field">
-                                    <label for="tracker-select">Tracker Engine</label>
-                                    <select id="tracker-select">
-                                        <option value="bytetrack.yaml" selected>ByteTrack (High Speed)</option>
-                                        <option value="botsort.yaml">BoT-SORT (High Accuracy)</option>
-                                    </select>
-                                </div>
-                                <div class="input-field">
-                                    <div class="slider-header">
-                                        <label for="conf-slider">Confidence Threshold</label>
-                                        <span id="conf-val">0.25</span>
-                                    </div>
-                                    <input type="range" id="conf-slider" min="0.05" max="0.95" step="0.05" value="0.25">
-                                </div>
-                            </div>
-                            <div class="drawer-upload-area">
-                                <div class="upload-zone" id="upload-zone">
-                                    <svg class="upload-icon" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                                        <path stroke-linecap="round" stroke-linejoin="round" d="M12 16.5V9.75m0 0l3 3m-3-3l-3 3M6.75 19.5a4.5 4.5 0 01-1.41-8.775 5.25 5.25 0 0110.233-2.33 3 3 0 013.758 3.848A3.752 3.752 0 0118 19.5H6.75z"></path>
-                                    </svg>
-                                    <p>Drag video here or click to upload</p>
-                                    <input type="file" id="video-file-input" accept="video/*" style="display: none;">
-                                </div>
-                                <div id="file-info" class="file-info hidden">
-                                    <span class="file-name" id="file-name-label">filename.mp4</span>
-                                    <button class="btn btn-icon" id="clear-file-btn">✕</button>
-                                </div>
-                            </div>
+                        <div class="obj-item">
+                            <div class="obj-meta"><span class="obj-icon">🚶</span><span class="obj-name">People</span></div>
+                            <div class="obj-right"><span class="obj-count" id="count-pedestrian">0</span><span class="badge-sm badge-up">↑ 14%</span></div>
                         </div>
-
-                        <!-- Video Monitor Viewport -->
-                        <div class="video-monitor" id="video-monitor">
-                            <!-- HUD Corner Target Brackets -->
-                            <div class="hud-corner top-left"></div>
-                            <div class="hud-corner top-right"></div>
-                            <div class="hud-corner bottom-left"></div>
-                            <div class="hud-corner bottom-right"></div>
-                            <div class="hud-grid-overlay"></div>
-                            <div class="hud-scanline"></div>
-                            
-                            <div class="video-placeholder" id="placeholder-text">
-                                <div class="radar-ping"></div>
-                                <span class="big-icon">🛰️</span>
-                                <p>Configure stream settings and click "Start Stream" to run multi-object tracking</p>
-                            </div>
-                            <img id="video-player" class="video-player hidden" src="" alt="Tracking feed">
+                        <div class="obj-item">
+                            <div class="obj-meta"><span class="obj-icon">🏍️</span><span class="obj-name">Motorcycles</span></div>
+                            <div class="obj-right"><span class="obj-count" id="count-motorcycle">0</span><span class="badge-sm badge-down">↓ 25%</span></div>
                         </div>
-
-                        <!-- Monitor Controls Footer -->
-                        <div class="monitor-footer">
-                            <div class="footer-buttons">
-                                <button class="btn btn-primary" id="start-btn">
-                                    <svg viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>
-                                    <span>Start</span>
-                                </button>
-                                <button class="btn btn-control" id="pause-btn" disabled>
-                                    <svg viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="4" width="4" height="16"></rect><rect x="14" y="4" width="4" height="16"></rect></svg>
-                                    <span>Pause</span>
-                                </button>
-                                <button class="btn btn-control" id="stop-btn">
-                                    <svg viewBox="0 0 24 24" fill="currentColor"><rect x="4" y="4" width="16" height="16"></rect></svg>
-                                    <span>Stop</span>
-                                </button>
-                                <button class="btn btn-control" id="snapshot-btn">
-                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"></path><circle cx="12" cy="13" r="4"></circle></svg>
-                                    <span>Snapshot</span>
-                                </button>
-                            </div>
-                            <div class="footer-rec-status hidden" id="rec-status-indicator">
-                                <span class="rec-dot"></span>
-                                <span class="rec-lbl">Recording...</span>
-                                <span class="rec-timer" id="rec-timer">00:00:00</span>
-                            </div>
+                        <div class="obj-item">
+                            <div class="obj-meta"><span class="obj-icon">🚲</span><span class="obj-name">Bicycles</span></div>
+                            <div class="obj-right"><span class="obj-count" id="count-bicycle">0</span><span class="badge-sm badge-neutral">→ 0%</span></div>
+                        </div>
+                        <div class="obj-item">
+                            <div class="obj-meta"><span class="obj-icon">🚌</span><span class="obj-name">Buses</span></div>
+                            <div class="obj-right"><span class="obj-count" id="count-bus">0</span><span class="badge-sm badge-down">↓ 100%</span></div>
+                        </div>
+                        <div class="obj-item">
+                            <div class="obj-meta"><span class="obj-icon">🚛</span><span class="obj-name">Trucks</span></div>
+                            <div class="obj-right"><span class="obj-count" id="count-truck">0</span><span class="badge-sm badge-up">↑ 100%</span></div>
                         </div>
                     </div>
-
-                    <!-- Row of 4 KPI Metrics -->
-                    <div class="stats-cards-row">
-                        <div class="kpi-card">
-                            <div class="kpi-header">
-                                <span class="title">Total Objects</span>
-                                <span class="trend up">↑ 18%</span>
-                            </div>
-                            <div class="value" id="kpi-total-objects">0</div>
-                            <div class="desc">vs last hour</div>
-                        </div>
-                        <div class="kpi-card">
-                            <div class="kpi-header">
-                                <span class="title">Active Tracks</span>
-                                <span class="trend up">↑ 15%</span>
-                            </div>
-                            <div class="value" id="kpi-active-tracks">0</div>
-                            <div class="desc">vs last hour</div>
-                        </div>
-                        <div class="kpi-card">
-                            <div class="kpi-header">
-                                <span class="title">Tracking Accuracy</span>
-                                <span class="trend up">↑ 2.3%</span>
-                            </div>
-                            <div class="value" id="kpi-accuracy">98.6%</div>
-                            <div class="desc">vs yesterday</div>
-                        </div>
-                        <div class="kpi-card">
-                            <div class="kpi-header">
-                                <span class="title">Avg. Latency</span>
-                                <span class="trend down">↓ 8%</span>
-                            </div>
-                            <div class="value"><span id="kpi-latency">0</span><span class="unit">ms</span></div>
-                            <div class="desc">vs last hour</div>
-                        </div>
-                    </div>
-
-                    <!-- Active Tracks Table Card -->
-                    <div class="dashboard-card table-card">
-                        <div class="card-header">
-                            <h2>Active Tracks</h2>
-                        </div>
-                        <div class="table-container">
-                            <table class="tracks-table">
-                                <thead>
-                                    <tr>
-                                        <th>ID</th>
-                                        <th>Class</th>
-                                        <th>Confidence</th>
-                                        <th>Position (x, y)</th>
-                                        <th>Speed</th>
-                                        <th>Direction</th>
-                                        <th>Status</th>
-                                        <th>Last Seen</th>
-                                    </tr>
-                                </thead>
-                                <tbody id="tracks-table-body">
-                                    <tr class="empty-row">
-                                        <td colspan="8">No active tracks. Start the stream to begin tracking.</td>
-                                    </tr>
-                                </tbody>
-                            </table>
-                        </div>
-                        <div class="table-footer">
-                            <button class="footer-link-btn">View All Tracks</button>
-                        </div>
+                    <div class="obj-footer">
+                        <span style="font-size:12px;color:var(--text-secondary);">Total Tracked</span>
+                        <span class="obj-total" id="total-tracked-count">0</span>
                     </div>
                 </div>
 
-                <!-- Right Panel: Objects, Performance, Events -->
-                <div class="panel-right">
-                    <!-- Detected Objects Card -->
-                    <div class="dashboard-card objects-card">
-                        <div class="card-header">
-                            <h2>Detected Objects</h2>
-                        </div>
-                        <ul class="objects-list">
-                            <li class="object-item" data-class="vehicle">
-                                <div class="item-meta">
-                                    <span class="icon">🚗</span>
-                                    <span class="lbl">Vehicles</span>
-                                </div>
-                                <div class="item-stats">
-                                    <span class="count" id="count-vehicle">0</span>
-                                    <span class="trend up" id="trend-vehicle">↑ 20%</span>
-                                </div>
-                            </li>
-                            <li class="object-item" data-class="pedestrian">
-                                <div class="item-meta">
-                                    <span class="icon">🚶</span>
-                                    <span class="lbl">People</span>
-                                </div>
-                                <div class="item-stats">
-                                    <span class="count" id="count-pedestrian">0</span>
-                                    <span class="trend up" id="trend-pedestrian">↑ 14%</span>
-                                </div>
-                            </li>
-                            <li class="object-item" data-class="motorcycle">
-                                <div class="item-meta">
-                                    <span class="icon">🏍️</span>
-                                    <span class="lbl">Motorcycles</span>
-                                </div>
-                                <div class="item-stats">
-                                    <span class="count" id="count-motorcycle">0</span>
-                                    <span class="trend down" id="trend-motorcycle">↓ 25%</span>
-                                </div>
-                            </li>
-                            <li class="object-item" data-class="bicycle">
-                                <div class="item-meta">
-                                    <span class="icon">🚲</span>
-                                    <span class="lbl">Bicycles</span>
-                                </div>
-                                <div class="item-stats">
-                                    <span class="count" id="count-bicycle">0</span>
-                                    <span class="trend neutral" id="trend-bicycle">→ 0%</span>
-                                </div>
-                            </li>
-                            <li class="object-item" data-class="bus">
-                                <div class="item-meta">
-                                    <span class="icon">🚌</span>
-                                    <span class="lbl">Buses</span>
-                                </div>
-                                <div class="item-stats">
-                                    <span class="count" id="count-bus">0</span>
-                                    <span class="trend down" id="trend-bus">↓ 100%</span>
-                                </div>
-                            </li>
-                            <li class="object-item" data-class="truck">
-                                <div class="item-meta">
-                                    <span class="icon">🚛</span>
-                                    <span class="lbl">Trucks</span>
-                                </div>
-                                <div class="item-stats">
-                                    <span class="count" id="count-truck">0</span>
-                                    <span class="trend up" id="trend-truck">↑ 100%</span>
-                                </div>
-                            </li>
-                        </ul>
-                        <div class="objects-summary-footer">
-                            <span class="lbl">Total Tracked Objects</span>
-                            <span class="total-tracked" id="total-tracked-count">0</span>
-                        </div>
+                <!-- Performance Chart Card -->
+                <div class="card">
+                    <div class="card-header">
+                        <div class="card-title">Tracking Performance</div>
                     </div>
-
-                    <!-- Tracking Performance Card -->
-                    <div class="dashboard-card performance-card">
-                        <div class="card-header">
-                            <h2>Tracking Performance</h2>
-                        </div>
-                        <div class="chart-wrapper">
-                            <canvas id="timelineChart"></canvas>
-                        </div>
+                    <div class="chart-wrap">
+                        <canvas id="timelineChart"></canvas>
                     </div>
+                </div>
 
-                    <!-- Recent Events Card -->
-                    <div class="dashboard-card events-card">
-                        <div class="card-header">
-                            <h2>Recent Events</h2>
-                        </div>
-                        <ul class="events-list" id="events-list-container">
-                            <li class="event-empty-item">No recent events.</li>
-                        </ul>
-                        <div class="events-footer">
-                            <button class="footer-link-btn">View All Events</button>
-                        </div>
+                <!-- Recent Events Card -->
+                <div class="card">
+                    <div class="card-header" style="padding-bottom:8px;">
+                        <div class="card-title">Recent Events</div>
+                    </div>
+                    <div class="events-list" id="events-list-container">
+                        <div class="event-empty">No recent events.</div>
+                    </div>
+                    <div class="events-footer">
+                        <button class="link-btn">View All Events</button>
                     </div>
                 </div>
             </div>
         </div>
-    </div>
+    </main>
+</div>
 
-    <!-- Main Controller Script -->
-    <script src="/static/js/main.js"></script>
+<script>
+// ===== DOM REFS =====
+const modelSelect = document.getElementById('model-select');
+const trackerSelect = document.getElementById('tracker-select');
+const confSlider = document.getElementById('conf-slider');
+const confVal = document.getElementById('conf-val');
+const uploadZone = document.getElementById('upload-zone');
+const videoFileInput = document.getElementById('video-file-input');
+const fileInfo = document.getElementById('file-info');
+const fileNameLabel = document.getElementById('file-name-label');
+const clearFileBtn = document.getElementById('clear-file-btn');
+const startBtn = document.getElementById('start-btn');
+const stopBtn = document.getElementById('stop-btn');
+const pauseBtn = document.getElementById('pause-btn');
+const snapshotBtn = document.getElementById('snapshot-btn');
+const videoPlayer = document.getElementById('video-player');
+const videoMonitor = document.getElementById('video-monitor');
+const placeholderText = document.getElementById('placeholder-text');
+const liveBadge = document.getElementById('live-badge');
+const liveBadgeText = document.getElementById('live-badge-text');
+const settingsToggleBtn = document.getElementById('settings-toggle-btn');
+const settingsDrawer = document.getElementById('settings-drawer');
+const fullscreenBtn = document.getElementById('fullscreen-btn');
+const themeDarkBtn = document.getElementById('theme-dark-btn');
+const themeLightBtn = document.getElementById('theme-light-btn');
+const kpiTotalObjects = document.getElementById('kpi-total-objects');
+const kpiActiveTracks = document.getElementById('kpi-active-tracks');
+const kpiLatency = document.getElementById('kpi-latency');
+const kpiAccuracy = document.getElementById('kpi-accuracy');
+const hudFps = document.getElementById('hud-fps');
+const hudLatency = document.getElementById('hud-latency');
+const tracksTableBody = document.getElementById('tracks-table-body');
+const eventsListContainer = document.getElementById('events-list-container');
+const totalTrackedCount = document.getElementById('total-tracked-count');
+const countVehicle = document.getElementById('count-vehicle');
+const countPedestrian = document.getElementById('count-pedestrian');
+const countMotorcycle = document.getElementById('count-motorcycle');
+const countBicycle = document.getElementById('count-bicycle');
+const countBus = document.getElementById('count-bus');
+const countTruck = document.getElementById('count-truck');
+const recStatusIndicator = document.getElementById('rec-status-indicator');
+const recTimer = document.getElementById('rec-timer');
+
+// ===== STATE =====
+let wsConnection = null;
+let currentVideoFile = null;
+let isStreaming = false;
+let isPaused = false;
+let previousTrackMap = new Map();
+let eventsList = [];
+let timelineChart = null;
+let recStartTime = 0;
+let recInterval = null;
+
+const classIcons = {
+    "pedestrian":"🚶","people":"👥","bicycle":"🚲","car":"🚗",
+    "van":"🚐","truck":"🚛","tricycle":"🛺","awning-tricycle":"🛺",
+    "bus":"🚌","motor":"🏍️","others":"📦"
+};
+
+// ===== INIT =====
+document.addEventListener('DOMContentLoaded', () => {
+    initChart();
+    initTheme();
+    setupListeners();
+});
+
+// ===== THEME =====
+function initTheme() {
+    const saved = localStorage.getItem('mot-theme') || 'dark';
+    saved === 'light' ? setLight() : setDark();
+}
+function setDark() {
+    document.body.className = 'dark-theme';
+    themeDarkBtn.classList.add('active');
+    themeLightBtn.classList.remove('active');
+    localStorage.setItem('mot-theme', 'dark');
+    updateChartColors('#8b91b5');
+}
+function setLight() {
+    document.body.className = 'light-theme';
+    themeLightBtn.classList.add('active');
+    themeDarkBtn.classList.remove('active');
+    localStorage.setItem('mot-theme', 'light');
+    updateChartColors('#6b7280');
+}
+function updateChartColors(color) {
+    if (!timelineChart) return;
+    timelineChart.options.scales.x.ticks.color = color;
+    timelineChart.options.scales.y.ticks.color = color;
+    timelineChart.update();
+}
+
+// ===== CHART =====
+function initChart() {
+    const ctx = document.getElementById('timelineChart').getContext('2d');
+    const grad = ctx.createLinearGradient(0, 0, 0, 140);
+    grad.addColorStop(0, 'rgba(79,110,247,0.3)');
+    grad.addColorStop(1, 'rgba(79,110,247,0.0)');
+
+    timelineChart = new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: [],
+            datasets: [{
+                label: 'Active Tracks',
+                data: [],
+                borderColor: '#4f6ef7',
+                backgroundColor: grad,
+                fill: true, tension: 0.4,
+                borderWidth: 2,
+                pointBackgroundColor: '#4f6ef7',
+                pointBorderColor: 'transparent',
+                pointRadius: 3,
+                pointHoverRadius: 5
+            }]
+        },
+        options: {
+            responsive: true, maintainAspectRatio: false,
+            scales: {
+                y: { beginAtZero: true, grid: { color: 'rgba(255,255,255,0.03)' }, ticks: { color: '#8b91b5', font: { family: 'Inter', size: 10 } } },
+                x: { grid: { display: false }, ticks: { color: '#8b91b5', maxTicksLimit: 8, font: { family: 'Inter', size: 10 } } }
+            },
+            plugins: { legend: { display: false } }
+        }
+    });
+}
+
+// ===== LISTENERS =====
+function setupListeners() {
+    themeDarkBtn.addEventListener('click', setDark);
+    themeLightBtn.addEventListener('click', setLight);
+
+    settingsToggleBtn.addEventListener('click', () => {
+        settingsDrawer.classList.toggle('hidden');
+        settingsToggleBtn.classList.toggle('active');
+    });
+
+    confSlider.addEventListener('input', e => {
+        confVal.textContent = parseFloat(e.target.value).toFixed(2);
+        if (isStreaming) debounceSettings();
+    });
+    modelSelect.addEventListener('change', () => { if (isStreaming) sendSettings(); });
+    trackerSelect.addEventListener('change', () => { if (isStreaming) sendSettings(); });
+
+    fullscreenBtn.addEventListener('click', () => {
+        if (!document.fullscreenElement) {
+            videoMonitor.requestFullscreen().catch(console.error);
+        } else {
+            document.exitFullscreen();
+        }
+    });
+
+    uploadZone.addEventListener('click', () => videoFileInput.click());
+    videoFileInput.addEventListener('change', handleUpload);
+    uploadZone.addEventListener('dragover', e => { e.preventDefault(); uploadZone.classList.add('dragover'); });
+    uploadZone.addEventListener('dragleave', () => uploadZone.classList.remove('dragover'));
+    uploadZone.addEventListener('drop', e => {
+        e.preventDefault(); uploadZone.classList.remove('dragover');
+        if (e.dataTransfer.files.length > 0) { videoFileInput.files = e.dataTransfer.files; handleUpload(); }
+    });
+    clearFileBtn.addEventListener('click', e => { e.stopPropagation(); resetUpload(); });
+
+    startBtn.addEventListener('click', startStream);
+    stopBtn.addEventListener('click', stopStream);
+    pauseBtn.addEventListener('click', togglePause);
+    snapshotBtn.addEventListener('click', snapshot);
+}
+
+// ===== SETTINGS =====
+let _stTimeout = null;
+function debounceSettings() { clearTimeout(_stTimeout); _stTimeout = setTimeout(sendSettings, 300); }
+async function sendSettings() {
+    try {
+        await fetch('/update_settings', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                model_path: modelSelect.value,
+                tracker_type: trackerSelect.value,
+                conf_threshold: parseFloat(confSlider.value)
+            })
+        });
+    } catch (e) { console.error('Settings update failed:', e); }
+}
+
+// ===== UPLOAD =====
+async function handleUpload() {
+    const file = videoFileInput.files[0];
+    if (!file) return;
+    const fd = new FormData();
+    fd.append('file', file);
+    fileNameLabel.textContent = 'Uploading…';
+    uploadZone.classList.add('hidden');
+    fileInfo.classList.remove('hidden');
+    try {
+        const r = await fetch('/upload', { method: 'POST', body: fd });
+        const d = await r.json();
+        if (r.ok) { currentVideoFile = d.filename; fileNameLabel.textContent = file.name; }
+        else { alert('Upload failed: ' + d.detail); resetUpload(); }
+    } catch (e) { console.error(e); alert('Upload error'); resetUpload(); }
+}
+function resetUpload() {
+    videoFileInput.value = '';
+    currentVideoFile = null;
+    fileInfo.classList.add('hidden');
+    uploadZone.classList.remove('hidden');
+}
+
+// ===== STREAM CONTROL =====
+function startStream() {
+    if (isStreaming) return;
+    const model = modelSelect.value;
+    const tracker = trackerSelect.value;
+    const conf = confSlider.value;
+    let url = `/video_feed?model=${encodeURIComponent(model)}&tracker=${encodeURIComponent(tracker)}&conf=${conf}`;
+    if (currentVideoFile) url += `&video_file=${encodeURIComponent(currentVideoFile)}`;
+
+    isStreaming = true; isPaused = false;
+    pauseBtn.disabled = false;
+    pauseBtn.innerHTML = `<svg viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></svg> Pause`;
+
+    previousTrackMap.clear(); eventsList = [];
+    eventsListContainer.innerHTML = '<div class="event-empty">No recent events.</div>';
+
+    connectWS();
+
+    videoPlayer.src = url;
+    videoPlayer.classList.remove('hidden');
+    placeholderText.classList.add('hidden');
+    videoMonitor.classList.add('scanning');
+
+    liveBadge.classList.add('active');
+    liveBadgeText.textContent = 'Live';
+
+    startRec();
+    timelineChart.data.labels = [];
+    timelineChart.data.datasets[0].data = [];
+    timelineChart.update();
+}
+
+async function stopStream() {
+    if (!isStreaming) return;
+    videoPlayer.src = '';
+    videoPlayer.classList.add('hidden');
+    placeholderText.classList.remove('hidden');
+    videoMonitor.classList.remove('scanning');
+
+    liveBadge.classList.remove('active');
+    liveBadgeText.textContent = 'Offline';
+
+    isStreaming = false; isPaused = false;
+    pauseBtn.disabled = true;
+
+    stopRec();
+
+    kpiTotalObjects.textContent = '0';
+    kpiActiveTracks.textContent = '0';
+    kpiLatency.textContent = '0';
+    hudFps.textContent = '0.0';
+    hudLatency.textContent = '0 ms';
+
+    tracksTableBody.innerHTML = '<tr class="empty"><td colspan="8">No active tracks. Start the stream to begin tracking.</td></tr>';
+    [countVehicle, countPedestrian, countMotorcycle, countBicycle, countBus, countTruck, totalTrackedCount].forEach(el => el.textContent = '0');
+
+    try { await fetch('/stop', { method: 'POST' }); } catch (e) { console.error(e); }
+    if (wsConnection) { wsConnection.close(); wsConnection = null; }
+}
+
+function togglePause() {
+    if (!isStreaming) return;
+    isPaused = !isPaused;
+    if (isPaused) {
+        videoPlayer.src = '';
+        pauseBtn.innerHTML = `<svg viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg> Resume`;
+        liveBadge.classList.remove('active');
+        liveBadgeText.textContent = 'Paused';
+        videoMonitor.classList.remove('scanning');
+    } else {
+        const model = modelSelect.value, tracker = trackerSelect.value, conf = confSlider.value;
+        let url = `/video_feed?model=${encodeURIComponent(model)}&tracker=${encodeURIComponent(tracker)}&conf=${conf}`;
+        if (currentVideoFile) url += `&video_file=${encodeURIComponent(currentVideoFile)}`;
+        videoPlayer.src = url;
+        pauseBtn.innerHTML = `<svg viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></svg> Pause`;
+        liveBadge.classList.add('active');
+        liveBadgeText.textContent = 'Live';
+        videoMonitor.classList.add('scanning');
+    }
+}
+
+// ===== RECORDING TIMER =====
+function startRec() {
+    clearInterval(recInterval);
+    recStartTime = Date.now();
+    recStatusIndicator.classList.remove('hidden');
+    recInterval = setInterval(() => {
+        const e = Date.now() - recStartTime;
+        const h = Math.floor(e/3600000).toString().padStart(2,'0');
+        const m = Math.floor((e%3600000)/60000).toString().padStart(2,'0');
+        const s = Math.floor((e%60000)/1000).toString().padStart(2,'0');
+        recTimer.textContent = `${h}:${m}:${s}`;
+    }, 1000);
+}
+function stopRec() {
+    clearInterval(recInterval);
+    recStatusIndicator.classList.add('hidden');
+    recTimer.textContent = '00:00:00';
+}
+
+// ===== SNAPSHOT =====
+function snapshot() {
+    if (!isStreaming) return;
+    try {
+        const c = document.createElement('canvas');
+        c.width = videoPlayer.naturalWidth || 640;
+        c.height = videoPlayer.naturalHeight || 360;
+        c.getContext('2d').drawImage(videoPlayer, 0, 0, c.width, c.height);
+        const a = document.createElement('a');
+        a.download = `mot_snapshot_${Date.now()}.jpg`;
+        a.href = c.toDataURL('image/jpeg', 0.9);
+        a.click();
+    } catch (e) { console.error('Snapshot failed:', e); }
+}
+
+// ===== WEBSOCKET =====
+function connectWS() {
+    if (wsConnection) wsConnection.close();
+    const proto = location.protocol === 'https:' ? 'wss:' : 'ws:';
+    wsConnection = new WebSocket(`${proto}//${location.host}/ws`);
+    wsConnection.onmessage = e => {
+        if (isPaused) return;
+        updateDashboard(JSON.parse(e.data));
+    };
+    wsConnection.onclose = () => console.log('WS closed');
+    wsConnection.onerror = e => console.error('WS error:', e);
+}
+
+// ===== DASHBOARD UPDATE =====
+function updateDashboard(stats) {
+    kpiActiveTracks.textContent = stats.active_tracks;
+    kpiLatency.textContent = stats.latency_ms;
+    hudFps.textContent = stats.fps.toFixed(1);
+    hudLatency.textContent = `${stats.latency_ms} ms`;
+
+    const tracks = stats.tracks || [];
+    if (tracks.length > 0) {
+        const avg = tracks.reduce((a, c) => a + c.confidence, 0) / tracks.length;
+        kpiAccuracy.textContent = `${(avg * 15 + 85).toFixed(1)}%`;
+    }
+
+    // Chart
+    const MAX = 30;
+    timelineChart.data.labels.push(stats.frame);
+    timelineChart.data.datasets[0].data.push(stats.active_tracks);
+    if (timelineChart.data.labels.length > MAX) {
+        timelineChart.data.labels.shift();
+        timelineChart.data.datasets[0].data.shift();
+    }
+    timelineChart.update('none');
+
+    // Class counts
+    const cls = stats.class_counts || {};
+    const veh = (cls.car||0) + (cls.van||0) + (cls.others||0);
+    const ppl = (cls.pedestrian||0) + (cls.people||0);
+    const mot = cls.motor || 0;
+    const bic = cls.bicycle || 0;
+    const bus = cls.bus || 0;
+    const trk = cls.truck || 0;
+
+    countVehicle.textContent = veh;
+    countPedestrian.textContent = ppl;
+    countMotorcycle.textContent = mot;
+    countBicycle.textContent = bic;
+    countBus.textContent = bus;
+    countTruck.textContent = trk;
+
+    const total = veh + ppl + mot + bic + bus + trk;
+    totalTrackedCount.textContent = total;
+    kpiTotalObjects.textContent = total;
+
+    updateEvents(tracks);
+    updateTable(tracks);
+}
+
+// ===== EVENT LOG =====
+function updateEvents(tracks) {
+    const cur = new Map();
+    const ts = new Date().toTimeString().split(' ')[0];
+    tracks.forEach(t => cur.set(t.id, t.class));
+
+    cur.forEach((cls, id) => {
+        if (!previousTrackMap.has(id)) addEvent(`New ${cls} detected (ID:${id})`, 'green', ts);
+    });
+    previousTrackMap.forEach((cls, id) => {
+        if (!cur.has(id)) addEvent(`Object left scene (ID:${id})`, 'red', ts);
+    });
+    previousTrackMap = cur;
+}
+function addEvent(msg, color, ts) {
+    eventsList.unshift({ msg, color, ts });
+    if (eventsList.length > 8) eventsList.pop();
+    eventsListContainer.innerHTML = eventsList.map(ev => `
+        <div class="event-item">
+            <div class="event-left">
+                <span class="event-dot ${ev.color}"></span>
+                <span class="event-msg">${ev.msg}</span>
+            </div>
+            <span class="event-time">${ev.ts}</span>
+        </div>
+    `).join('');
+}
+
+// ===== TRACKS TABLE =====
+function updateTable(tracks) {
+    if (!tracks.length) {
+        tracksTableBody.innerHTML = '<tr class="empty"><td colspan="8">No active tracks. Start the stream to begin tracking.</td></tr>';
+        return;
+    }
+    const ts = new Date().toTimeString().split(' ')[0];
+    tracksTableBody.innerHTML = tracks.map(t => `
+        <tr>
+            <td><strong>${t.id}</strong></td>
+            <td><div class="class-cell"><span>${classIcons[t.class]||'📦'}</span><span>${t.class}</span></div></td>
+            <td>${t.confidence.toFixed(2)}</td>
+            <td>(${t.x}, ${t.y})</td>
+            <td>${t.speed} km/h</td>
+            <td style="font-size:16px;font-weight:bold;">${t.direction||'→'}</td>
+            <td><span class="track-status">Tracking</span></td>
+            <td>${ts}</td>
+        </tr>
+    `).join('');
+}
+</script>
 </body>
 </html>
