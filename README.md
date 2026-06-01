@@ -6,7 +6,7 @@ AerialMOT is a real-time Multi-Object Tracking (MOT) web application and dashboa
 
 ## 🚀 Quick Start (Run the Project)
 
-A pre-configured Python virtual environment (`.venv`) is already setup inside `data/mot_project` with all the necessary dependencies installed.
+A pre-configured Python virtual environment (`.venv`) is already set up inside `data/mot_project` with all the necessary dependencies installed.
 
 To run the application, follow these steps:
 
@@ -73,28 +73,72 @@ Once the application is running, you can use the web UI to control and monitor t
 * **Confidence Threshold**: Adjustable slider to filter detections in real-time.
 * **Video Feed Control**:
   * Upload custom video files (`.mp4`, `.avi`, `.mov`, `.mkv`) by clicking or dragging files into the upload area.
-  * Click **Start Stream** to run tracking. If no custom file is uploaded, the app streams a default traffic monitoring sample video.
+  * Click **Start** to run tracking. If no custom file is uploaded, the app streams a built-in traffic monitoring sample video.
 * **Real-time Analytics**:
-  * **Active Tracks count**, **Processing FPS**, and **GPU Inference Latency** metrics displayed on the top cards.
+  * **Active Tracks count**, **Processing FPS**, and **Inference Latency** metrics displayed on the top KPI cards.
   * **Class counts** and **Historical tracking timelines** rendered dynamically via Chart.js.
+  * **Recent Events** log showing when objects enter or leave the scene.
+
+---
+
+## ⚠️ Known Behaviours
+
+| Behaviour | Explanation |
+|---|---|
+| **Pause restarts the video** | The video is delivered via MJPEG streaming (a continuous HTTP response). Pausing works by disconnecting and reconnecting the stream — the backend re-processes the video from the beginning on Resume. This is expected behaviour for MJPEG-based streaming. |
+| **Finetuned model not found** | If you select *Finetuned VisDrone* before running `train.py`, the app falls back to the base YOLOv8 Nano weights automatically. Run `python train.py` first to generate the weights at `runs/detect/train/weights/best.pt`. |
+
+---
+
+## 🏋️ Fine-tuning on VisDrone
+
+To train the model on your own VisDrone dataset:
+
+1. Download the [VisDrone dataset](https://github.com/VisDrone/VisDrone-Dataset) and place images under `data/images/` and labels under `data/labels/` (YOLO format).
+2. Verify `data/mot_project/data.yaml` points to the correct paths.
+3. Run the training script:
+   ```bash
+   python train.py --epochs 50 --batch 16 --model yolov8n.pt
+   ```
+4. The best weights will be saved at `runs/detect/train/weights/best.pt` and automatically picked up by the dashboard.
+
+---
+
+## 🐳 Deploy to Hugging Face Spaces
+
+A ready-to-use Docker setup is included for deployment to [Hugging Face Spaces](https://huggingface.co/spaces):
+
+```bash
+bash deploy_hf.sh
+```
+
+This script will:
+1. Bundle the app files into a temporary deployment directory.
+2. Initialize a Git LFS-tracked repository (for binary `.pt` model weights).
+3. Push to your Hugging Face Space (Docker SDK, port 7860).
 
 ---
 
 ## 📂 Project Structure
 
-```directory
+```
 Multi-Object-Tracking-In-Vedio-Streaming/
-├── README.md               # This instructions file
+├── README.md                   # This instructions file
+├── .gitignore                  # Excludes .venv, runs/, uploads/, large binaries
+├── yolov8n.pt                  # Base YOLOv8 Nano weights (tracked via Git LFS)
 └── data/
     └── mot_project/
-        ├── app.py          # FastAPI web application (WebSockets, routes, stream controllers)
-        ├── tracker.py      # OpenCV & Ultralytics YOLO tracker wrapper class
-        ├── train.py        # Script to finetune YOLO models on custom datasets
-        ├── requirements.txt # Python dependency file
-        ├── data.yaml       # VisDrone dataset training configuration
-        ├── static/         # Frontend CSS and JS files
-        │   ├── css/style.css
-        │   └── js/main.js
-        ├── templates/      # Jinja2 templates (index.html dashboard UI)
-        └── runs/           # Holds trained weights (e.g., best.pt)
+        ├── app.py              # FastAPI app (WebSockets, routes, MJPEG stream)
+        ├── tracker.py          # OpenCV + Ultralytics YOLO tracker wrapper
+        ├── train.py            # Fine-tuning script for custom datasets
+        ├── requirements.txt    # Python dependencies
+        ├── data.yaml           # VisDrone dataset training configuration
+        ├── Dockerfile          # Docker image for Hugging Face Spaces
+        ├── deploy_hf.sh        # Hugging Face Spaces deployment script
+        ├── sample_traffic.mp4  # Built-in demo video (auto-downloaded if missing)
+        ├── templates/
+        │   └── index.html      # Full-stack dashboard (HTML + CSS + JS, inline)
+        ├── static/             # Static asset directory (mounted at /static)
+        ├── uploads/            # Temporary user-uploaded video files (git-ignored)
+        └── runs/               # Training outputs — best.pt lives here (git-ignored)
 ```

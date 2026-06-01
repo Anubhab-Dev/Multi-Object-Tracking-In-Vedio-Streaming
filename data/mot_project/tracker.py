@@ -205,4 +205,5 @@ class VideoTracker:
                 
         finally:
             cap.release()
+            self.track_history.clear()  # Clean up stale track IDs between sessions
             print("Video source released.")

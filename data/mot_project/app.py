@@ -2,7 +2,9 @@ import os
 import time
 import asyncio
 import urllib.request
+from contextlib import asynccontextmanager
 from typing import List, Optional
+import torch
 from fastapi import FastAPI, Request, WebSocket, WebSocketDisconnect, UploadFile, File, HTTPException
 from fastapi.responses import HTMLResponse, StreamingResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
@@ -11,8 +13,6 @@ from pydantic import BaseModel
 
 # Import our tracker wrapper
 from tracker import VideoTracker
-
-app = FastAPI(title="AerialMOT - Multi-Object Tracker")
 
 # Paths
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -24,12 +24,6 @@ os.makedirs(UPLOAD_DIR, exist_ok=True)
 os.makedirs(STATIC_DIR, exist_ok=True)
 os.makedirs(TEMPLATES_DIR, exist_ok=True)
 
-# Mount Static Files
-app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
-
-# Jinja Templates
-templates = Jinja2Templates(directory=TEMPLATES_DIR)
-
 # Sample video configuration
 SAMPLE_VIDEO_URL = "https://github.com/DeGirum/PySDKExamples/raw/main/images/Traffic.mp4"
 SAMPLE_VIDEO_PATH = os.path.join(BASE_DIR, "sample_traffic.mp4")
@@ -39,11 +33,25 @@ active_stream_id: Optional[str] = None
 current_tracker: Optional[VideoTracker] = None
 main_loop = None
 
-@app.on_event("startup")
-async def startup_event():
+# Detect inference device once at startup
+DEVICE = "mps" if torch.backends.mps.is_available() else "cpu"
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    """Modern FastAPI lifespan context manager (replaces deprecated on_event)."""
     global main_loop
     main_loop = asyncio.get_running_loop()
-    print("Application startup: captured main event loop.", flush=True)
+    print(f"Application startup: event loop captured. Inference device: {DEVICE}", flush=True)
+    yield
+    print("Application shutdown.", flush=True)
+
+app = FastAPI(title="AerialMOT - Multi-Object Tracker", lifespan=lifespan)
+
+# Mount Static Files
+app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
+
+# Jinja Templates
+templates = Jinja2Templates(directory=TEMPLATES_DIR)
 
 # WebSocket Connection Manager
 class ConnectionManager:
@@ -175,9 +183,6 @@ def video_feed(model: str = "yolov8n.pt", tracker: str = "bytetrack.yaml", conf:
         video_source = SAMPLE_VIDEO_PATH
         
     # Instantiate tracker
-    import torch
-    device = "mps" if torch.backends.mps.is_available() else "cpu"
-    
     # Resolve model weights
     model_weight = model
     if model != "yolov8n.pt":
@@ -202,7 +207,7 @@ def video_feed(model: str = "yolov8n.pt", tracker: str = "bytetrack.yaml", conf:
         print(f"Starting tracking stream: {stream_id}")
         
         try:
-            tracker_gen = current_tracker.process_video_stream(video_source, device=device)
+            tracker_gen = current_tracker.process_video_stream(video_source, device=DEVICE)
             loop = main_loop
             
             for frame_bytes, stats in tracker_gen:

@@ -1,2 +1,51 @@
-*.mov
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.pyc
+
+# Virtual environment
+.venv/
+venv/
+env/
+
+# Model weights (use Git LFS or download separately)
 *.pt
+*.pth
+*.onnx
+
+# Video files (large binaries)
+*.mp4
+*.mov
+*.avi
+*.mkv
+*.webm
+
+# Dataset / training outputs
+runs/
+data/images/
+data/labels/
+
+# Uploaded user videos
+data/mot_project/uploads/
+
+# Temporary deployment directory
+data/mot_project/hf_deploy/
+
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# IDE / editors
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Jupyter
+.ipynb_checkpoints/
+
+# Logs
+*.log

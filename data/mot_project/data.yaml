@@ -1,4 +1,4 @@
-path: /Users/anusha/Downloads/data  # dataset root dir
+path: ../  # dataset root dir (relative to this yaml file — points to data/ which contains images/ and labels/)
 train: images/train  # train images (relative to path)
 val: images/val  # val images (relative to path)
 test: images/test  # test images (optional, relative to path)
