@@ -6,7 +6,7 @@ from contextlib import asynccontextmanager
 from typing import List, Optional
 import torch
 from fastapi import FastAPI, Request, WebSocket, WebSocketDisconnect, UploadFile, File, HTTPException
-from fastapi.responses import HTMLResponse, StreamingResponse, JSONResponse
+from fastapi.responses import HTMLResponse, StreamingResponse, JSONResponse, FileResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from pydantic import BaseModel
@@ -19,10 +19,12 @@ BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 UPLOAD_DIR = os.path.join(BASE_DIR, "uploads")
 STATIC_DIR = os.path.join(BASE_DIR, "static")
 TEMPLATES_DIR = os.path.join(BASE_DIR, "templates")
+EXPORT_DIR = os.path.join(BASE_DIR, "exports")
 
 os.makedirs(UPLOAD_DIR, exist_ok=True)
 os.makedirs(STATIC_DIR, exist_ok=True)
 os.makedirs(TEMPLATES_DIR, exist_ok=True)
+os.makedirs(EXPORT_DIR, exist_ok=True)
 
 # Sample video configuration
 SAMPLE_VIDEO_URL = "https://github.com/DeGirum/PySDKExamples/raw/main/images/Traffic.mp4"
@@ -91,6 +93,10 @@ class SettingsUpdate(BaseModel):
     model_path: str
     tracker_type: str
     conf_threshold: float
+    tripwire_line: Optional[List[List[float]]] = None
+    reset_counts: Optional[bool] = False
+    show_heatmap: Optional[bool] = False
+    speed_limit: Optional[int] = 50
 
 @app.get("/", response_class=HTMLResponse)
 def index(request: Request):
@@ -137,7 +143,11 @@ def update_settings(settings: SettingsUpdate):
             current_tracker.update_settings(
                 model_path=model_path,
                 tracker_type=settings.tracker_type,
-                conf_threshold=settings.conf_threshold
+                conf_threshold=settings.conf_threshold,
+                tripwire_line=settings.tripwire_line,
+                reset_counts=settings.reset_counts,
+                show_heatmap=settings.show_heatmap,
+                speed_limit=settings.speed_limit
             )
             print(f"Tracker settings updated: {settings}")
             return {"status": "success"}
@@ -150,9 +160,23 @@ def update_settings(settings: SettingsUpdate):
 def stop_stream():
     global active_stream_id, current_tracker
     print("Stopping stream request received.")
+    if current_tracker is not None:
+        report_path = os.path.join(EXPORT_DIR, "latest_report.csv")
+        current_tracker.save_log_to_csv(report_path)
     active_stream_id = None
     current_tracker = None
     return {"status": "stopped"}
+
+@app.get("/download_report")
+def download_report():
+    report_path = os.path.join(EXPORT_DIR, "latest_report.csv")
+    if os.path.exists(report_path):
+        return FileResponse(
+            path=report_path,
+            filename="tracking_report.csv",
+            media_type="text/csv"
+        )
+    raise HTTPException(status_code=404, detail="No tracking report available. Please run tracking first.")
 
 @app.websocket("/ws")
 async def websocket_endpoint(websocket: WebSocket):
@@ -175,9 +199,12 @@ def video_feed(model: str = "yolov8n.pt", tracker: str = "bytetrack.yaml", conf:
     
     # Resolve video source
     if video_file:
-        video_source = os.path.join(UPLOAD_DIR, video_file)
-        if not os.path.exists(video_source):
-            raise HTTPException(status_code=404, detail="Requested video file not found")
+        if video_file in ["webcam", "0"]:
+            video_source = 0
+        else:
+            video_source = os.path.join(UPLOAD_DIR, video_file)
+            if not os.path.exists(video_source):
+                raise HTTPException(status_code=404, detail="Requested video file not found")
     else:
         download_sample_video()
         video_source = SAMPLE_VIDEO_PATH
@@ -232,6 +259,9 @@ def video_feed(model: str = "yolov8n.pt", tracker: str = "bytetrack.yaml", conf:
         except Exception as e:
             print(f"Error in frame generator {stream_id}: {e}")
         finally:
+            if current_tracker is not None:
+                report_path = os.path.join(EXPORT_DIR, "latest_report.csv")
+                current_tracker.save_log_to_csv(report_path)
             print(f"Tracking stream {stream_id} finished.")
             
     return StreamingResponse(

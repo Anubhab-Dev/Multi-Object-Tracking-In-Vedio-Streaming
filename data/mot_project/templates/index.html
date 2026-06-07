@@ -568,6 +568,26 @@
         }
         .link-btn:hover { color: var(--text-primary); }
 
+        @keyframes highlight-glow {
+            0% {
+                box-shadow: var(--shadow-card);
+                border-color: var(--border);
+            }
+            50% {
+                box-shadow: 0 0 25px var(--accent), inset 0 0 10px rgba(79, 110, 247, 0.25);
+                border-color: var(--accent);
+            }
+            100% {
+                box-shadow: var(--shadow-card);
+                border-color: var(--border);
+            }
+        }
+        .highlight-pulse {
+            animation: highlight-glow 1.5s ease-out;
+            position: relative;
+            z-index: 10;
+        }
+
         /* ===== LIGHT THEME ===== */
         .light-theme {
             --bg-primary: #f3f5fb;
@@ -745,7 +765,7 @@
             <div style="display:flex;flex-direction:column;gap:16px;">
 
                 <!-- Monitor Card -->
-                <div class="card monitor-card">
+                <div class="card monitor-card" id="card-monitor">
                     <div class="monitor-header">
                         <div class="live-row">
                             <span class="card-title">Live Stream</span>
@@ -753,16 +773,17 @@
                                 <span class="live-badge-dot"></span>
                                 <span id="live-badge-text">Offline</span>
                             </div>
+                            <div class="live-badge hidden" id="tripwire-badge" style="background:var(--accent-soft);border-color:rgba(79,110,247,0.2);color:var(--text-primary);text-transform:none;">
+                                <span>📥 In: <strong id="tripwire-in">0</strong></span>
+                                <span style="margin:0 4px;opacity:0.3;">|</span>
+                                <span>📤 Out: <strong id="tripwire-out">0</strong></span>
+                            </div>
                         </div>
                         <div class="monitor-controls">
-                            <select class="cam-select" id="camera-select">
-                                <option value="cam-1">Camera 01</option>
-                                <option value="cam-2">Camera 02 (Wide)</option>
-                            </select>
                             <button class="icon-btn" id="settings-toggle-btn" title="Settings">
                                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                     <circle cx="12" cy="12" r="3"/>
-                                    <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+                                    <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9"/>
                                 </svg>
                             </button>
                             <button class="icon-btn" id="fullscreen-btn" title="Fullscreen">
@@ -793,7 +814,32 @@
                             <label class="field-label">Confidence: <span id="conf-val" style="color:var(--accent);font-weight:700;">0.25</span></label>
                             <input type="range" id="conf-slider" min="0.05" max="0.95" step="0.05" value="0.25">
                         </div>
-                        <div class="field upload-full">
+                        <div class="field">
+                            <label class="field-label">Video Input Source</label>
+                            <select id="source-select">
+                                <option value="sample" selected>Sample Traffic Video</option>
+                                <option value="webcam">Local Webcam Feed</option>
+                                <option value="upload">Custom Uploaded Video</option>
+                            </select>
+                        </div>
+                        <div class="field">
+                            <label class="field-label" style="display:flex;align-items:center;gap:6px;cursor:pointer;text-transform:none;">
+                                <input type="checkbox" id="tripwire-enable-chk" style="width:auto;margin:0;"> Tripwire (Click & Drag)
+                            </label>
+                            <button class="btn" id="tripwire-reset-btn" style="padding:4px 8px;font-size:11px;margin-top:2px;" disabled>Reset Counts</button>
+                        </div>
+                        <div class="field">
+                            <label class="field-label" style="display:flex;align-items:center;gap:6px;cursor:pointer;text-transform:none;">
+                                <input type="checkbox" id="heatmap-enable-chk" style="width:auto;margin:0;"> Density Heatmap
+                            </label>
+                        </div>
+                        <div class="field">
+                            <label class="field-label">Speed Alert: <span id="speed-limit-val" style="color:var(--red);font-weight:700;">50</span> km/h</label>
+                            <input type="range" id="speed-limit-slider" min="10" max="100" step="5" value="50">
+                        </div>
+                        <div class="field"></div>
+                        <div class="field"></div>
+                        <div class="field upload-full hidden" id="upload-field-container">
                             <div class="upload-zone" id="upload-zone">
                                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
                                     <path stroke-linecap="round" stroke-linejoin="round" d="M12 16.5V9.75m0 0l3 3m-3-3l-3 3M6.75 19.5a4.5 4.5 0 01-1.41-8.775 5.25 5.25 0 0110.233-2.33 3 3 0 013.758 3.848A3.752 3.752 0 0118 19.5H6.75z"/>
@@ -816,6 +862,7 @@
                         <div class="hud-corner br"></div>
                         <div class="hud-grid"></div>
                         <div class="scan-line"></div>
+                        <canvas id="tripwire-canvas" style="position:absolute;top:0;left:0;width:100%;height:100%;z-index:5;cursor:crosshair;pointer-events:none;"></canvas>
                         <div class="placeholder" id="placeholder-text">
                             <div class="placeholder-icon">🛰️</div>
                             <p>Configure stream settings above and click <strong>Start</strong> to begin multi-object tracking</p>
@@ -842,6 +889,10 @@
                                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
                                 Snapshot
                             </button>
+                            <button class="btn" id="download-report-btn" title="Download CSV Report">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>
+                                Report
+                            </button>
                         </div>
                         <div class="rec-indicator hidden" id="rec-status-indicator">
                             <span class="rec-dot"></span>
@@ -852,7 +903,7 @@
                 </div>
 
                 <!-- Active Tracks Table -->
-                <div class="card">
+                <div class="card" id="card-tracking">
                     <div class="card-header" style="padding:16px 18px 12px;">
                         <div>
                             <div class="card-title">Active Tracks</div>
@@ -924,7 +975,7 @@
                 </div>
 
                 <!-- Performance Chart Card -->
-                <div class="card">
+                <div class="card" id="card-analytics">
                     <div class="card-header">
                         <div class="card-title">Tracking Performance</div>
                     </div>
@@ -934,7 +985,7 @@
                 </div>
 
                 <!-- Recent Events Card -->
-                <div class="card">
+                <div class="card" id="card-events">
                     <div class="card-header" style="padding-bottom:8px;">
                         <div class="card-title">Recent Events</div>
                     </div>
@@ -993,6 +1044,17 @@ const countTruck = document.getElementById('count-truck');
 const recStatusIndicator = document.getElementById('rec-status-indicator');
 const recTimer = document.getElementById('rec-timer');
 
+const sourceSelect = document.getElementById('source-select');
+const uploadFieldContainer = document.getElementById('upload-field-container');
+const tripwireCanvas = document.getElementById('tripwire-canvas');
+const ctxTripwire = tripwireCanvas.getContext('2d');
+const tripwireEnableChk = document.getElementById('tripwire-enable-chk');
+const tripwireResetBtn = document.getElementById('tripwire-reset-btn');
+const downloadReportBtn = document.getElementById('download-report-btn');
+const heatmapEnableChk = document.getElementById('heatmap-enable-chk');
+const speedLimitSlider = document.getElementById('speed-limit-slider');
+const speedLimitVal = document.getElementById('speed-limit-val');
+
 // ===== STATE =====
 let wsConnection = null;
 let currentVideoFile = null;
@@ -1003,6 +1065,11 @@ let eventsList = [];
 let timelineChart = null;
 let recStartTime = 0;
 let recInterval = null;
+
+let tripwirePoints = null; // [(x1, y1), (x2, y2)] normalized
+let isDrawingTripwire = false;
+let drawStartPoint = null;
+let loggedSpeedingAlerts = new Set();
 
 const classIcons = {
     "pedestrian":"🚶","people":"👥","bicycle":"🚲","car":"🚗",
@@ -1015,6 +1082,7 @@ document.addEventListener('DOMContentLoaded', () => {
     initChart();
     initTheme();
     setupListeners();
+    resizeTripwireCanvas();
 });
 
 // ===== THEME =====
@@ -1086,6 +1154,7 @@ function setupListeners() {
     settingsToggleBtn.addEventListener('click', () => {
         settingsDrawer.classList.toggle('hidden');
         settingsToggleBtn.classList.toggle('active');
+        setTimeout(resizeTripwireCanvas, 250); // Ensure size matches drawer space
     });
 
     confSlider.addEventListener('input', e => {
@@ -1117,12 +1186,185 @@ function setupListeners() {
     stopBtn.addEventListener('click', stopStream);
     pauseBtn.addEventListener('click', togglePause);
     snapshotBtn.addEventListener('click', snapshot);
+
+    sourceSelect.addEventListener('change', () => {
+        const val = sourceSelect.value;
+        if (val === 'sample') {
+            currentVideoFile = null;
+            uploadFieldContainer.classList.add('hidden');
+        } else if (val === 'webcam') {
+            currentVideoFile = 'webcam';
+            uploadFieldContainer.classList.add('hidden');
+        } else if (val === 'upload') {
+            uploadFieldContainer.classList.remove('hidden');
+            if (videoFileInput.files.length > 0 && fileNameLabel.textContent !== 'Uploading…' && fileNameLabel.textContent !== '') {
+                // Keep the current uploaded filename
+            } else {
+                currentVideoFile = null;
+            }
+        }
+    });
+
+    tripwireEnableChk.addEventListener('change', () => {
+        if (tripwireEnableChk.checked) {
+            tripwireCanvas.style.pointerEvents = 'auto';
+            tripwireResetBtn.disabled = false;
+        } else {
+            tripwireCanvas.style.pointerEvents = 'none';
+            tripwireResetBtn.disabled = true;
+            tripwirePoints = null;
+            clearTripwireCanvas();
+            sendSettings();
+        }
+    });
+
+    tripwireResetBtn.addEventListener('click', () => {
+        sendSettings(true);
+    });
+
+    downloadReportBtn.addEventListener('click', () => {
+        window.location.href = '/download_report';
+    });
+
+    heatmapEnableChk.addEventListener('change', () => {
+        if (isStreaming) sendSettings();
+    });
+
+    speedLimitSlider.addEventListener('input', e => {
+        speedLimitVal.textContent = e.target.value;
+        if (isStreaming) debounceSettings();
+    });
+
+    // Canvas drawing events
+    tripwireCanvas.addEventListener('mousedown', (e) => {
+        if (!tripwireEnableChk.checked) return;
+        const rect = tripwireCanvas.getBoundingClientRect();
+        isDrawingTripwire = true;
+        drawStartPoint = {
+            x: (e.clientX - rect.left) / tripwireCanvas.clientWidth,
+            y: (e.clientY - rect.top) / tripwireCanvas.clientHeight
+        };
+    });
+
+    tripwireCanvas.addEventListener('mousemove', (e) => {
+        if (!isDrawingTripwire || !drawStartPoint) return;
+        const rect = tripwireCanvas.getBoundingClientRect();
+        const currentPoint = {
+            x: (e.clientX - rect.left) / tripwireCanvas.clientWidth,
+            y: (e.clientY - rect.top) / tripwireCanvas.clientHeight
+        };
+        clearTripwireCanvas();
+        const w = tripwireCanvas.width;
+        const h = tripwireCanvas.height;
+        ctxTripwire.strokeStyle = 'rgba(79, 110, 247, 0.5)';
+        ctxTripwire.lineWidth = 2;
+        ctxTripwire.beginPath();
+        ctxTripwire.moveTo(drawStartPoint.x * w, drawStartPoint.y * h);
+        ctxTripwire.lineTo(currentPoint.x * w, currentPoint.y * h);
+        ctxTripwire.stroke();
+    });
+
+    tripwireCanvas.addEventListener('mouseup', (e) => {
+        if (!isDrawingTripwire || !drawStartPoint) return;
+        isDrawingTripwire = false;
+        const rect = tripwireCanvas.getBoundingClientRect();
+        const endPoint = {
+            x: (e.clientX - rect.left) / tripwireCanvas.clientWidth,
+            y: (e.clientY - rect.top) / tripwireCanvas.clientHeight
+        };
+        const dist = Math.sqrt((endPoint.x - drawStartPoint.x)**2 + (endPoint.y - drawStartPoint.y)**2);
+        if (dist > 0.02) {
+            tripwirePoints = [drawStartPoint, endPoint];
+            redrawTripwire();
+            sendSettings();
+        } else {
+            tripwirePoints = null;
+            clearTripwireCanvas();
+            sendSettings();
+        }
+        drawStartPoint = null;
+    });
+
+    // Navigation Items Interactivity and Highlights
+    const navDashboard = document.getElementById('nav-dashboard');
+    const navLive = document.getElementById('nav-live');
+    const navTracking = document.getElementById('nav-tracking');
+    const navAnalytics = document.getElementById('nav-analytics');
+    const navEvents = document.getElementById('nav-events');
+    const navSettings = document.getElementById('nav-settings');
+
+    const cardMonitor = document.getElementById('card-monitor');
+    const cardTracking = document.getElementById('card-tracking');
+    const cardAnalytics = document.getElementById('card-analytics');
+    const cardEvents = document.getElementById('card-events');
+
+    function highlightCard(card) {
+        if (!card) return;
+        card.classList.remove('highlight-pulse');
+        // Trigger reflow to restart animation if clicked repeatedly
+        void card.offsetWidth;
+        card.classList.add('highlight-pulse');
+        card.addEventListener('animationend', () => {
+            card.classList.remove('highlight-pulse');
+        }, { once: true });
+    }
+
+    function handleNavClick(e, navId, targetCard, scrollTarget = null) {
+        e.preventDefault();
+        document.querySelectorAll('.nav-item').forEach(item => item.classList.remove('active'));
+        document.getElementById(navId).classList.add('active');
+        
+        const elementToScroll = scrollTarget || targetCard;
+        if (elementToScroll) {
+            elementToScroll.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+        highlightCard(targetCard);
+    }
+
+    navDashboard.addEventListener('click', (e) => {
+        e.preventDefault();
+        document.querySelectorAll('.nav-item').forEach(item => item.classList.remove('active'));
+        navDashboard.classList.add('active');
+        document.querySelector('.main').scrollTo({ top: 0, behavior: 'smooth' });
+    });
+
+    navLive.addEventListener('click', (e) => {
+        handleNavClick(e, 'nav-live', cardMonitor);
+    });
+
+    navTracking.addEventListener('click', (e) => {
+        handleNavClick(e, 'nav-tracking', cardTracking);
+    });
+
+    navAnalytics.addEventListener('click', (e) => {
+        handleNavClick(e, 'nav-analytics', cardAnalytics);
+    });
+
+    navEvents.addEventListener('click', (e) => {
+        handleNavClick(e, 'nav-events', cardEvents);
+    });
+
+    navSettings.addEventListener('click', (e) => {
+        e.preventDefault();
+        document.querySelectorAll('.nav-item').forEach(item => item.classList.remove('active'));
+        navSettings.classList.add('active');
+        
+        // Open settings drawer if closed
+        if (settingsDrawer.classList.contains('hidden')) {
+            settingsDrawer.classList.remove('hidden');
+            settingsToggleBtn.classList.add('active');
+            setTimeout(resizeTripwireCanvas, 250);
+        }
+        
+        settingsDrawer.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        highlightCard(settingsDrawer);
+    });
 }
 
 // ===== SETTINGS =====
 let _stTimeout = null;
 function debounceSettings() { clearTimeout(_stTimeout); _stTimeout = setTimeout(sendSettings, 300); }
-async function sendSettings() {
+async function sendSettings(resetCounts = false) {
     try {
         await fetch('/update_settings', {
             method: 'POST',
@@ -1130,10 +1372,53 @@ async function sendSettings() {
             body: JSON.stringify({
                 model_path: modelSelect.value,
                 tracker_type: trackerSelect.value,
-                conf_threshold: parseFloat(confSlider.value)
+                conf_threshold: parseFloat(confSlider.value),
+                tripwire_line: getScaledTripwire(),
+                reset_counts: resetCounts,
+                show_heatmap: heatmapEnableChk.checked,
+                speed_limit: parseInt(speedLimitSlider.value)
             })
         });
     } catch (e) { console.error('Settings update failed:', e); }
+}
+
+function clearTripwireCanvas() {
+    ctxTripwire.clearRect(0, 0, tripwireCanvas.width, tripwireCanvas.height);
+}
+
+function resizeTripwireCanvas() {
+    tripwireCanvas.width = tripwireCanvas.clientWidth;
+    tripwireCanvas.height = tripwireCanvas.clientHeight;
+    redrawTripwire();
+}
+window.addEventListener('resize', resizeTripwireCanvas);
+
+function redrawTripwire() {
+    clearTripwireCanvas();
+    if (!tripwirePoints) return;
+    const [p1, p2] = tripwirePoints;
+    const w = tripwireCanvas.width;
+    const h = tripwireCanvas.height;
+    ctxTripwire.strokeStyle = '#4f6ef7';
+    ctxTripwire.lineWidth = 3;
+    ctxTripwire.beginPath();
+    ctxTripwire.moveTo(p1.x * w, p1.y * h);
+    ctxTripwire.lineTo(p2.x * w, p2.y * h);
+    ctxTripwire.stroke();
+    ctxTripwire.fillStyle = '#4f6ef7';
+    ctxTripwire.font = '10px Inter';
+    ctxTripwire.fillText('Tripwire Line', p1.x * w + 5, p1.y * h - 5);
+}
+
+function getScaledTripwire() {
+    if (!tripwirePoints) return null;
+    const nativeW = videoPlayer.naturalWidth || 1280;
+    const nativeH = videoPlayer.naturalHeight || 720;
+    const [p1, p2] = tripwirePoints;
+    return [
+        [Math.round(p1.x * nativeW), Math.round(p1.y * nativeH)],
+        [Math.round(p2.x * nativeW), Math.round(p2.y * nativeH)]
+    ];
 }
 
 // ===== UPLOAD =====
@@ -1200,6 +1485,9 @@ async function stopStream() {
 
     liveBadge.classList.remove('active');
     liveBadgeText.textContent = 'Offline';
+    document.getElementById('tripwire-badge').classList.add('hidden');
+    document.getElementById('tripwire-in').textContent = '0';
+    document.getElementById('tripwire-out').textContent = '0';
 
     isStreaming = false; isPaused = false;
     pauseBtn.disabled = true;
@@ -1214,6 +1502,8 @@ async function stopStream() {
 
     tracksTableBody.innerHTML = '<tr class="empty"><td colspan="8">No active tracks. Start the stream to begin tracking.</td></tr>';
     [countVehicle, countPedestrian, countMotorcycle, countBicycle, countBus, countTruck, totalTrackedCount].forEach(el => el.textContent = '0');
+
+    loggedSpeedingAlerts.clear();
 
     try { await fetch('/stop', { method: 'POST' }); } catch (e) { console.error(e); }
     if (wsConnection) { wsConnection.close(); wsConnection = null; }
@@ -1330,6 +1620,36 @@ function updateDashboard(stats) {
     totalTrackedCount.textContent = total;
     kpiTotalObjects.textContent = total;
 
+    // Update Tripwire Stats
+    const tripwire = stats.tripwire || {};
+    const tripwireBadge = document.getElementById('tripwire-badge');
+    const tripwireIn = document.getElementById('tripwire-in');
+    const tripwireOut = document.getElementById('tripwire-out');
+    
+    if (tripwire.enabled) {
+        tripwireBadge.classList.remove('hidden');
+        tripwireIn.textContent = tripwire.inbound;
+        tripwireOut.textContent = tripwire.outbound;
+    } else {
+        tripwireBadge.classList.add('hidden');
+    }
+
+    // Speeding alerts
+    tracks.forEach(t => {
+        if (t.speeding) {
+            const alertKey = `speeding-${t.id}-${t.speed}`;
+            if (!loggedSpeedingAlerts.has(alertKey)) {
+                loggedSpeedingAlerts.add(alertKey);
+                if (loggedSpeedingAlerts.size > 50) {
+                    const firstKey = loggedSpeedingAlerts.values().next().value;
+                    loggedSpeedingAlerts.delete(firstKey);
+                }
+                const ts = new Date().toTimeString().split(' ')[0];
+                addEvent(`⚠️ Speeding Alert! ID:${t.id} (${t.class}) going ${t.speed} km/h`, 'red', ts);
+            }
+        }
+    });
+
     updateEvents(tracks);
     updateTable(tracks);
 }
@@ -1369,18 +1689,22 @@ function updateTable(tracks) {
         return;
     }
     const ts = new Date().toTimeString().split(' ')[0];
-    tracksTableBody.innerHTML = tracks.map(t => `
-        <tr>
-            <td><strong>${t.id}</strong></td>
-            <td><div class="class-cell"><span>${classIcons[t.class]||'📦'}</span><span>${t.class}</span></div></td>
-            <td>${t.confidence.toFixed(2)}</td>
-            <td>(${t.x}, ${t.y})</td>
-            <td>${t.speed} km/h</td>
-            <td style="font-size:16px;font-weight:bold;">${t.direction||'→'}</td>
-            <td><span class="track-status">Tracking</span></td>
-            <td>${ts}</td>
-        </tr>
-    `).join('');
+    tracksTableBody.innerHTML = tracks.map(t => {
+        const rowStyle = t.speeding ? 'style="color: #ef4444; background: rgba(239,68,68,0.05);"' : '';
+        const statusText = t.speeding ? '<span class="track-status" style="color:#ef4444; background:rgba(239,68,68,0.12); border-color:rgba(239,68,68,0.2);">Speed Limit</span>' : '<span class="track-status">Tracking</span>';
+        return `
+            <tr ${rowStyle}>
+                <td><strong>${t.id}</strong></td>
+                <td><div class="class-cell"><span>${classIcons[t.class]||'📦'}</span><span>${t.class}</span></div></td>
+                <td>${t.confidence.toFixed(2)}</td>
+                <td>(${t.x}, ${t.y})</td>
+                <td><strong>${t.speed} km/h</strong></td>
+                <td style="font-size:16px;font-weight:bold;">${t.direction||'→'}</td>
+                <td>${statusText}</td>
+                <td>${ts}</td>
+            </tr>
+        `;
+    }).join('');
 }
 </script>
 </body>

@@ -12,7 +12,10 @@ if ! command -v git &> /dev/null; then
 fi
 
 # Ask for the Hugging Face space Git repository URL
-read -p "Enter your Hugging Face Space Git URL (e.g., https://huggingface.co/spaces/username/space-name): " HF_REPO_URL
+HF_REPO_URL=$1
+if [ -z "$HF_REPO_URL" ]; then
+    read -p "Enter your Hugging Face Space Git URL (e.g., https://huggingface.co/spaces/username/space-name): " HF_REPO_URL
+fi
 
 if [ -z "$HF_REPO_URL" ]; then
     echo "Error: Space URL cannot be empty."
