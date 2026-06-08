@@ -512,7 +512,7 @@
         .obj-total { font-size: 18px; font-weight: 800; color: var(--accent); font-family: var(--font-mono); background: var(--accent-soft); padding: 2px 10px; border-radius: 10px; }
 
         /* ===== CHART CARD ===== */
-        .chart-wrap { padding: 12px 18px 16px; height: 190px; position: relative; }
+        .chart-wrap { padding: 12px 18px 16px; height: 260px; position: relative; }
 
         /* ===== EVENTS LIST ===== */
         .events-list {
@@ -1120,11 +1120,11 @@ function updateChartColors(color) {
 // ===== CHART =====
 function initChart() {
     const ctx = document.getElementById('timelineChart').getContext('2d');
-    const gradTracks = ctx.createLinearGradient(0, 0, 0, 140);
+    const gradTracks = ctx.createLinearGradient(0, 0, 0, 200);
     gradTracks.addColorStop(0, 'rgba(79,110,247,0.3)');
     gradTracks.addColorStop(1, 'rgba(79,110,247,0.0)');
 
-    const gradAccuracy = ctx.createLinearGradient(0, 0, 0, 140);
+    const gradAccuracy = ctx.createLinearGradient(0, 0, 0, 200);
     gradAccuracy.addColorStop(0, 'rgba(16,185,129,0.3)');
     gradAccuracy.addColorStop(1, 'rgba(16,185,129,0.0)');
 
@@ -1169,9 +1169,9 @@ function initChart() {
                     display: true,
                     position: 'left',
                     beginAtZero: true,
-                    title: { display: true, text: 'Tracks', color: '#8b91b5', font: { family: 'Inter', size: 9, weight: 'bold' } },
+                    title: { display: true, text: 'Tracks', color: '#8b91b5', font: { family: 'Inter', size: 11, weight: 'bold' } },
                     grid: { color: 'rgba(255,255,255,0.03)' },
-                    ticks: { color: '#8b91b5', font: { family: 'Inter', size: 9 } }
+                    ticks: { color: '#8b91b5', font: { family: 'Inter', size: 11 } }
                 },
                 y1: {
                     type: 'linear',
@@ -1179,13 +1179,13 @@ function initChart() {
                     position: 'right',
                     min: 50,
                     max: 100,
-                    title: { display: true, text: 'Accuracy %', color: '#10b981', font: { family: 'Inter', size: 9, weight: 'bold' } },
+                    title: { display: true, text: 'Accuracy %', color: '#10b981', font: { family: 'Inter', size: 11, weight: 'bold' } },
                     grid: { drawOnChartArea: false },
-                    ticks: { color: '#10b981', font: { family: 'Inter', size: 9 } }
+                    ticks: { color: '#10b981', font: { family: 'Inter', size: 11 } }
                 },
                 x: {
                     grid: { display: false },
-                    ticks: { color: '#8b91b5', maxTicksLimit: 8, font: { family: 'Inter', size: 9 } }
+                    ticks: { color: '#8b91b5', maxTicksLimit: 8, font: { family: 'Inter', size: 11 } }
                 }
             },
             plugins: {
@@ -1195,9 +1195,9 @@ function initChart() {
                     align: 'end',
                     labels: {
                         color: '#8b91b5',
-                        boxWidth: 8,
-                        boxHeight: 8,
-                        font: { family: 'Inter', size: 9 }
+                        boxWidth: 12,
+                        boxHeight: 12,
+                        font: { family: 'Inter', size: 11 }
                     }
                 }
             }
