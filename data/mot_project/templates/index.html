@@ -1072,9 +1072,9 @@ let drawStartPoint = null;
 let loggedSpeedingAlerts = new Set();
 
 const classIcons = {
-    "pedestrian":"🚶","people":"👥","bicycle":"🚲","car":"🚗",
+    "pedestrian":"🚶","people":"👥","person":"🚶","bicycle":"🚲","car":"🚗",
     "van":"🚐","truck":"🚛","tricycle":"🛺","awning-tricycle":"🛺",
-    "bus":"🚌","motor":"🏍️","others":"📦"
+    "bus":"🚌","motor":"🏍️","motorcycle":"🏍️","others":"📦"
 };
 
 // ===== INIT =====
@@ -1675,8 +1675,8 @@ function updateDashboard(stats) {
     // Class counts
     const cls = stats.class_counts || {};
     const veh = (cls.car||0) + (cls.van||0) + (cls.others||0);
-    const ppl = (cls.pedestrian||0) + (cls.people||0);
-    const mot = cls.motor || 0;
+    const ppl = (cls.pedestrian||0) + (cls.people||0) + (cls.person||0);
+    const mot = (cls.motor||0) + (cls.motorcycle||0);
     const bic = cls.bicycle || 0;
     const bus = cls.bus || 0;
     const trk = cls.truck || 0;
