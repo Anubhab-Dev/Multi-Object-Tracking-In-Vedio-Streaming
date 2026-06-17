@@ -22,6 +22,18 @@ if [ -z "$HF_REPO_URL" ]; then
     exit 1
 fi
 
+# Build and sync Next.js frontend
+echo "Building Next.js frontend..."
+cd ../../frontend
+npm run build
+cd ../data/mot_project
+
+echo "Syncing frontend assets to app templates/static directories..."
+cp -f ../../frontend/out/index.html templates/index.html
+rm -rf static/_next
+mkdir -p static/_next
+cp -r ../../frontend/out/_next/* static/_next/
+
 # Create a temporary deployment directory
 DEPLOY_DIR="hf_deploy"
 echo "Preparing deployment directory ($DEPLOY_DIR)..."

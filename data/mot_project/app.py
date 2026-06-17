@@ -6,6 +6,7 @@ from contextlib import asynccontextmanager
 from typing import List, Optional
 import torch
 from fastapi import FastAPI, Request, WebSocket, WebSocketDisconnect, UploadFile, File, HTTPException
+from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import HTMLResponse, StreamingResponse, JSONResponse, FileResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
@@ -49,8 +50,18 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(title="AerialMOT - Multi-Object Tracker", lifespan=lifespan)
 
+# Add CORS middleware
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
 # Mount Static Files
 app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
+app.mount("/_next", StaticFiles(directory=os.path.join(STATIC_DIR, "_next")), name="next_assets")
 
 # Jinja Templates
 templates = Jinja2Templates(directory=TEMPLATES_DIR)
