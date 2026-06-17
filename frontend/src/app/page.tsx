@@ -2,12 +2,6 @@
 
 import React, { useState, useEffect, useRef } from "react";
 import {
-  LayoutDashboard,
-  Tv,
-  Eye,
-  BarChart2,
-  Bell,
-  Settings,
   Moon,
   Sun,
   Play,
@@ -15,15 +9,15 @@ import {
   Square,
   Camera,
   Download,
-  UploadCloud,
-  X,
   Maximize,
-  User,
-  Activity,
-  ChevronRight,
-  ShieldAlert,
+  Bell,
+  Settings,
 } from "lucide-react";
 import TimelineChart from "../components/TimelineChart";
+import Sidebar from "../components/Sidebar";
+import SettingsDrawer from "../components/SettingsDrawer";
+import ActiveTracksTable from "../components/ActiveTracksTable";
+import RecentEvents from "../components/RecentEvents";
 
 interface Track {
   id: number;
@@ -646,132 +640,12 @@ export default function Home() {
       <div className="hidden dark:block fixed top-[-200px] left-[-200px] w-[600px] h-[600px] bg-[radial-gradient(circle,_rgba(79,110,247,0.08)_0%,_transparent_70%)] pointer-events-none z-0" />
       <div className="hidden dark:block fixed bottom-[-150px] right-[-150px] w-[500px] h-[500px] bg-[radial-gradient(circle,_rgba(168,85,247,0.06)_0%,_transparent_70%)] pointer-events-none z-0" />
 
-      {/* ===== SIDEBAR ===== */}
-      <aside className="w-60 bg-white border-r border-black/5 dark:bg-[#0d1120] dark:border-white/5 flex flex-col z-10 shrink-0 select-none">
-        
-        {/* Brand */}
-        <div className="flex items-center gap-3 px-5 h-16 border-b border-black/5 dark:border-white/5">
-          <div className="w-9 h-9 bg-gradient-to-br from-[#4f6ef7] to-[#a855f7] rounded-lg flex items-center justify-center shadow-md shadow-[#4f6ef7]/20">
-            <Activity className="w-5 h-5 text-white" />
-          </div>
-          <div>
-            <div className="font-bold text-sm leading-tight">MOT Vision</div>
-            <span className="text-[10px] uppercase font-semibold tracking-wider text-[#9ca3af] dark:text-[#4a5070]">
-              Multi-Object Tracking
-            </span>
-          </div>
-        </div>
-
-        {/* Sidebar Nav */}
-        <nav className="flex-1 px-3 py-4 flex flex-col gap-1">
-          <span className="text-[9px] font-bold uppercase tracking-wider text-[#9ca3af] dark:text-[#4a5070] px-3 mb-2">
-            Menu
-          </span>
-          <a
-            href="#"
-            onClick={(e) => handleNavClick(e, "dashboard", "")}
-            className={`flex items-center gap-3 px-3 py-2 rounded-md text-xs font-medium transition-all ${
-              activeNav === "dashboard"
-                ? "bg-[#4f6ef7]/10 dark:bg-[#4f6ef7]/12 text-[#4f6ef7]"
-                : "text-[#6b7280] dark:text-[#8b91b5] hover:bg-black/5 dark:hover:bg-white/4 hover:text-[#111827] dark:hover:text-white"
-            }`}
-          >
-            <LayoutDashboard className="w-4 h-4" />
-            Dashboard
-          </a>
-          <a
-            href="#"
-            onClick={(e) => handleNavClick(e, "live", "card-monitor")}
-            className={`flex items-center gap-3 px-3 py-2 rounded-md text-xs font-medium transition-all ${
-              activeNav === "live"
-                ? "bg-[#4f6ef7]/10 dark:bg-[#4f6ef7]/12 text-[#4f6ef7]"
-                : "text-[#6b7280] dark:text-[#8b91b5] hover:bg-black/5 dark:hover:bg-white/4 hover:text-[#111827] dark:hover:text-white"
-            }`}
-          >
-            <Tv className="w-4 h-4" />
-            Live Stream
-          </a>
-          <a
-            href="#"
-            onClick={(e) => handleNavClick(e, "tracking", "card-tracking")}
-            className={`flex items-center gap-3 px-3 py-2 rounded-md text-xs font-medium transition-all ${
-              activeNav === "tracking"
-                ? "bg-[#4f6ef7]/10 dark:bg-[#4f6ef7]/12 text-[#4f6ef7]"
-                : "text-[#6b7280] dark:text-[#8b91b5] hover:bg-black/5 dark:hover:bg-white/4 hover:text-[#111827] dark:hover:text-white"
-            }`}
-          >
-            <Eye className="w-4 h-4" />
-            Tracking
-          </a>
-          <a
-            href="#"
-            onClick={(e) => handleNavClick(e, "analytics", "card-analytics")}
-            className={`flex items-center gap-3 px-3 py-2 rounded-md text-xs font-medium transition-all ${
-              activeNav === "analytics"
-                ? "bg-[#4f6ef7]/10 dark:bg-[#4f6ef7]/12 text-[#4f6ef7]"
-                : "text-[#6b7280] dark:text-[#8b91b5] hover:bg-black/5 dark:hover:bg-white/4 hover:text-[#111827] dark:hover:text-white"
-            }`}
-          >
-            <BarChart2 className="w-4 h-4" />
-            Analytics
-          </a>
-          <a
-            href="#"
-            onClick={(e) => handleNavClick(e, "events", "card-events")}
-            className={`flex items-center gap-3 px-3 py-2 rounded-md text-xs font-medium transition-all ${
-              activeNav === "events"
-                ? "bg-[#4f6ef7]/10 dark:bg-[#4f6ef7]/12 text-[#4f6ef7]"
-                : "text-[#6b7280] dark:text-[#8b91b5] hover:bg-black/5 dark:hover:bg-white/4 hover:text-[#111827] dark:hover:text-white"
-            }`}
-          >
-            <Bell className="w-4 h-4" />
-            Events
-          </a>
-          <a
-            href="#"
-            onClick={(e) => handleNavClick(e, "settings", "settings-drawer")}
-            className={`flex items-center gap-3 px-3 py-2 rounded-md text-xs font-medium transition-all ${
-              activeNav === "settings"
-                ? "bg-[#4f6ef7]/10 dark:bg-[#4f6ef7]/12 text-[#4f6ef7]"
-                : "text-[#6b7280] dark:text-[#8b91b5] hover:bg-black/5 dark:hover:bg-white/4 hover:text-[#111827] dark:hover:text-white"
-            }`}
-          >
-            <Settings className="w-4 h-4" />
-            Settings
-          </a>
-        </nav>
-
-        {/* Sidebar Status Widget */}
-        <div className="p-4 border-t border-black/5 dark:border-white/5">
-          <div className="bg-black/[0.02] border border-black/5 dark:bg-white/[0.02] dark:border-white/5 rounded-xl p-3">
-            <div className="flex items-center gap-2 mb-2">
-              <span className="w-2 h-2 rounded-full bg-[#22c55e] animate-pulse shadow-sm shadow-[#22c55e]/50" />
-              <span className="font-bold text-xs">System Status</span>
-            </div>
-            <div className="text-[10px] text-[#6b7280] dark:text-[#8b91b5] mb-3">
-              All systems operational
-            </div>
-            <div className="flex flex-col gap-1.5 text-xs">
-              <div className="flex justify-between">
-                <span className="text-[#6b7280] dark:text-[#8b91b5]">FPS</span>
-                <span className="font-semibold font-mono">{telemetry ? telemetry.fps.toFixed(1) : "0.0"}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-[#6b7280] dark:text-[#8b91b5]">Resolution</span>
-                <span className="font-semibold font-mono">1280×720</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-[#6b7280] dark:text-[#8b91b5]">Bitrate</span>
-                <span className="font-semibold font-mono">2.4 Mbps</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-[#6b7280] dark:text-[#8b91b5]">Latency</span>
-                <span className="font-semibold font-mono">{telemetry ? `${telemetry.latency_ms} ms` : "0 ms"}</span>
-              </div>
-            </div>
-          </div>
-        </div>
-      </aside>
+      <Sidebar
+        activeNav={activeNav}
+        onNavClick={handleNavClick}
+        fps={telemetry ? telemetry.fps : 0}
+        latency={telemetry ? telemetry.latency_ms : 0}
+      />
 
       {/* Main Container */}
       <div className="flex-1 flex flex-col min-w-0">
@@ -995,160 +869,29 @@ export default function Home() {
                   </div>
                 </div>
 
-                {/* Settings Drawer (Collapsible) */}
-                <div
-                  id="settings-drawer"
-                  className={`bg-black/[0.01] dark:bg-white/[0.01] border-b border-black/5 dark:border-white/5 px-5 py-4 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 transition-all duration-300 ${
-                    settingsOpen ? "block" : "hidden"
-                  }`}
-                >
-                  <div className="flex flex-col gap-1.5">
-                    <label className="text-[10px] uppercase font-bold text-[#6b7280] dark:text-[#8b91b5]">
-                      Active Model
-                    </label>
-                    <select
-                      value={activeModel}
-                      onChange={(e) => setActiveModel(e.target.value)}
-                      className="bg-black/[0.04] dark:bg-white/[0.04] border border-black/5 dark:border-white/5 rounded-lg px-3 py-1.5 text-xs text-[#111827] dark:text-white outline-none focus:border-[#4f6ef7] transition-all"
-                    >
-                      <option value="yolov8n.pt" className="dark:bg-[#0d1120]">YOLOv8 Nano (Base)</option>
-                      <option value="runs/detect/train/weights/best.pt" className="dark:bg-[#0d1120]">Finetuned VisDrone</option>
-                    </select>
-                  </div>
-
-                  <div className="flex flex-col gap-1.5">
-                    <label className="text-[10px] uppercase font-bold text-[#6b7280] dark:text-[#8b91b5]">
-                      Tracker Engine
-                    </label>
-                    <select
-                      value={trackerEngine}
-                      onChange={(e) => setTrackerEngine(e.target.value)}
-                      className="bg-black/[0.04] dark:bg-white/[0.04] border border-black/5 dark:border-white/5 rounded-lg px-3 py-1.5 text-xs text-[#111827] dark:text-white outline-none focus:border-[#4f6ef7] transition-all"
-                    >
-                      <option value="bytetrack.yaml" className="dark:bg-[#0d1120]">ByteTrack (Speed)</option>
-                      <option value="botsort.yaml" className="dark:bg-[#0d1120]">BoT-SORT (Accuracy)</option>
-                    </select>
-                  </div>
-
-                  <div className="flex flex-col gap-1.5">
-                    <label className="text-[10px] uppercase font-bold text-[#6b7280] dark:text-[#8b91b5] flex justify-between">
-                      <span>Confidence</span>
-                      <span className="font-semibold text-[#4f6ef7]">{confidence.toFixed(2)}</span>
-                    </label>
-                    <input
-                      type="range"
-                      min="0.05"
-                      max="0.95"
-                      step="0.05"
-                      value={confidence}
-                      onChange={(e) => setConfidence(parseFloat(e.target.value))}
-                      className="accent-[#4f6ef7] w-full mt-1 cursor-pointer"
-                    />
-                  </div>
-
-                  <div className="flex flex-col gap-1.5">
-                    <label className="text-[10px] uppercase font-bold text-[#6b7280] dark:text-[#8b91b5]">
-                      Video Input Source
-                    </label>
-                    <select
-                      value={videoSource}
-                      onChange={(e) => {
-                        setVideoSource(e.target.value);
-                        if (e.target.value !== "upload") {
-                          resetFileUpload();
-                        }
-                      }}
-                      className="bg-black/[0.04] dark:bg-white/[0.04] border border-black/5 dark:border-white/5 rounded-lg px-3 py-1.5 text-xs text-[#111827] dark:text-white outline-none focus:border-[#4f6ef7] transition-all"
-                    >
-                      <option value="sample" className="dark:bg-[#0d1120]">Sample Traffic Video</option>
-                      <option value="webcam" className="dark:bg-[#0d1120]">Local Webcam Feed</option>
-                      <option value="upload" className="dark:bg-[#0d1120]">Custom Uploaded Video</option>
-                    </select>
-                  </div>
-
-                  <div className="flex flex-col gap-1.5 justify-center">
-                    <label className="text-xs font-semibold flex items-center gap-2 cursor-pointer select-none">
-                      <input
-                        type="checkbox"
-                        checked={tripwireEnabled}
-                        onChange={(e) => setTripwireEnabled(e.target.checked)}
-                        className="rounded accent-[#4f6ef7] cursor-pointer"
-                      />
-                      Tripwire (Click & Drag)
-                    </label>
-                    <button
-                      onClick={() => sendSettingsUpdate({ resetCounts: true })}
-                      disabled={!tripwireEnabled}
-                      className="mt-1.5 text-[10px] font-bold px-2 py-1 bg-black/[0.04] dark:bg-white/[0.04] border border-black/5 dark:border-white/5 rounded-md hover:bg-black/10 dark:hover:bg-white/10 text-[#6b7280] dark:text-[#8b91b5] hover:text-[#111827] dark:hover:text-white transition-all disabled:opacity-30 disabled:cursor-not-allowed"
-                    >
-                      Reset Counts
-                    </button>
-                  </div>
-
-                  <div className="flex flex-col gap-1.5 justify-center">
-                    <label className="text-xs font-semibold flex items-center gap-2 cursor-pointer select-none">
-                      <input
-                        type="checkbox"
-                        checked={heatmapEnabled}
-                        onChange={(e) => setHeatmapEnabled(e.target.checked)}
-                        className="rounded accent-[#4f6ef7] cursor-pointer"
-                      />
-                      Density Heatmap
-                    </label>
-                  </div>
-
-                  <div className="flex flex-col gap-1.5">
-                    <label className="text-[10px] uppercase font-bold text-[#6b7280] dark:text-[#8b91b5] flex justify-between">
-                      <span>Speed Alert Limit</span>
-                      <span className="font-semibold text-[#ef4444]">{speedLimit} km/h</span>
-                    </label>
-                    <input
-                      type="range"
-                      min="10"
-                      max="100"
-                      step="5"
-                      value={speedLimit}
-                      onChange={(e) => setSpeedLimit(parseInt(e.target.value))}
-                      className="accent-[#ef4444] w-full mt-1 cursor-pointer"
-                    />
-                  </div>
-
-                  {/* Video Drag & Drop Uploader */}
-                  {videoSource === "upload" && (
-                    <div className="col-span-full mt-2 flex flex-col gap-2">
-                      <div
-                        onClick={() => fileInputRef.current?.click()}
-                        className="border-2 border-dashed border-black/10 dark:border-white/10 rounded-xl p-4 text-center cursor-pointer hover:border-[#4f6ef7] hover:bg-[#4f6ef7]/5 transition-all flex flex-col items-center justify-center"
-                      >
-                        <UploadCloud className="w-6 h-6 text-[#9ca3af] dark:text-[#4a5070] mb-1" />
-                        <p className="text-xs text-[#6b7280] dark:text-[#8b91b5]">
-                          Drag video file here or click to upload
-                        </p>
-                        <input
-                          type="file"
-                          ref={fileInputRef}
-                          onChange={handleFileUpload}
-                          accept="video/*"
-                          className="hidden"
-                        />
-                      </div>
-                      {uploadedFileName && (
-                        <div className="flex items-center justify-between bg-black/[0.04] dark:bg-white/[0.04] border border-black/5 dark:border-white/5 rounded-lg px-3 py-1.5">
-                          <span className="text-xs font-mono truncate max-w-[80%]">
-                            {uploadedFileName}
-                          </span>
-                          <button
-                            onClick={resetFileUpload}
-                            disabled={isUploading}
-                            className="text-[#6b7280] dark:text-[#8b91b5] hover:text-[#ef4444] transition-all disabled:opacity-35"
-                          >
-                            <X className="w-4 h-4" />
-                          </button>
-                        </div>
-                      )}
-                    </div>
-                  )}
-                </div>
+                <SettingsDrawer
+                  isOpen={settingsOpen}
+                  activeModel={activeModel}
+                  setActiveModel={setActiveModel}
+                  trackerEngine={trackerEngine}
+                  setTrackerEngine={setTrackerEngine}
+                  confidence={confidence}
+                  setConfidence={setConfidence}
+                  videoSource={videoSource}
+                  setVideoSource={setVideoSource}
+                  tripwireEnabled={tripwireEnabled}
+                  setTripwireEnabled={setTripwireEnabled}
+                  heatmapEnabled={heatmapEnabled}
+                  setHeatmapEnabled={setHeatmapEnabled}
+                  speedLimit={speedLimit}
+                  setSpeedLimit={setSpeedLimit}
+                  onResetCounts={() => sendSettingsUpdate({ resetCounts: true })}
+                  uploadedFileName={uploadedFileName}
+                  isUploading={isUploading}
+                  onFileUpload={handleFileUpload}
+                  onResetUpload={resetFileUpload}
+                  fileInputRef={fileInputRef}
+                />
 
                 {/* Video Viewport Wrapper */}
                 <div
@@ -1266,82 +1009,7 @@ export default function Home() {
                 <div className="px-5 py-4 border-b border-black/5 dark:border-white/5">
                   <span className="font-bold text-xs">Active Tracks</span>
                 </div>
-                <div className="overflow-x-auto">
-                  <table className="w-full text-left border-collapse text-xs">
-                    <thead>
-                      <tr className="border-b border-black/5 dark:border-white/5 uppercase text-[9px] font-bold text-[#6b7280] dark:text-[#8b91b5]">
-                        <th className="px-5 py-3">ID</th>
-                        <th className="px-5 py-3">Class</th>
-                        <th className="px-5 py-3">Conf.</th>
-                        <th className="px-5 py-3">Position</th>
-                        <th className="px-5 py-3">Speed</th>
-                        <th className="px-5 py-3">Dir.</th>
-                        <th className="px-5 py-3">Status</th>
-                        <th className="px-5 py-3">Last Seen</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-black/[0.04] dark:divide-white/[0.04]">
-                      {telemetry && telemetry.tracks.length > 0 ? (
-                        telemetry.tracks.map((t) => {
-                          const ts = new Date().toTimeString().split(" ")[0];
-                          return (
-                            <tr
-                              key={t.id}
-                              className={`hover:bg-black/[0.015] dark:hover:bg-white/[0.015] transition-colors ${
-                                t.speeding
-                                  ? "text-[#ef4444] bg-[#ef4444]/5 hover:bg-[#ef4444]/8"
-                                  : ""
-                              }`}
-                            >
-                              <td className="px-5 py-3 font-bold">{t.id}</td>
-                              <td className="px-5 py-3 font-medium">
-                                <div className="flex items-center gap-1.5">
-                                  <span>{classIcons[t.class] || "📦"}</span>
-                                  <span>{t.class}</span>
-                                </div>
-                              </td>
-                              <td className="px-5 py-3 font-mono">
-                                {t.confidence.toFixed(2)}
-                              </td>
-                              <td className="px-5 py-3 font-mono">
-                                ({t.x}, {t.y})
-                              </td>
-                              <td className="px-5 py-3 font-bold font-mono">
-                                {t.speed} km/h
-                              </td>
-                              <td className="px-5 py-3 font-bold text-base select-none">
-                                {t.direction || "→"}
-                              </td>
-                              <td className="px-5 py-3">
-                                <span
-                                  className={`inline-block px-2 py-0.5 rounded-full text-[9px] font-bold uppercase tracking-wider ${
-                                    t.speeding
-                                      ? "bg-[#ef4444]/12 text-[#ef4444] border border-[#ef4444]/15"
-                                      : "bg-[#22c55e]/12 text-[#22c55e] border border-[#22c55e]/15"
-                                  }`}
-                                >
-                                  {t.speeding ? "Speed Limit" : "Tracking"}
-                                </span>
-                              </td>
-                              <td className="px-5 py-3 font-mono text-[#6b7280] dark:text-[#4a5070]">
-                                {ts}
-                              </td>
-                            </tr>
-                          );
-                        })
-                      ) : (
-                        <tr>
-                          <td
-                            colSpan={8}
-                            className="px-5 py-8 text-center text-[#6b7280] dark:text-[#8b91b5] italic font-medium"
-                          >
-                            No active tracks. Start the stream to begin tracking.
-                          </td>
-                        </tr>
-                      )}
-                    </tbody>
-                  </table>
-                </div>
+                <ActiveTracksTable tracks={telemetry ? telemetry.tracks : []} />
                 <div className="px-5 py-3 border-t border-black/5 dark:border-white/5 flex justify-center select-none">
                   <button className="text-[10px] font-bold uppercase tracking-wider text-[#6b7280] dark:text-[#8b91b5] hover:text-[#111827] dark:hover:text-white underline underline-offset-4 decoration-2">
                     View All Tracks
@@ -1491,37 +1159,7 @@ export default function Home() {
                   <span className="font-bold text-xs">Recent Events</span>
                 </div>
                 
-                <div className="flex-1 overflow-y-auto px-5 py-2 min-h-[160px] max-h-[160px] flex flex-col gap-2">
-                  {events.length > 0 ? (
-                    events.map((ev, index) => {
-                      const dotColors = {
-                        green: "bg-[#22c55e] shadow-sm shadow-[#22c55e]/50",
-                        red: "bg-[#ef4444] shadow-sm shadow-[#ef4444]/50",
-                        blue: "bg-[#4f6ef7] shadow-sm shadow-[#4f6ef7]/50",
-                        orange: "bg-[#f97316] shadow-sm shadow-[#f97316]/50",
-                      };
-
-                      return (
-                        <div
-                          key={index}
-                          className="flex items-center justify-between border-b border-black/[0.03] dark:border-white/[0.03] pb-1.5 text-xs animate-[fadeIn_0.3s_ease]"
-                        >
-                          <div className="flex items-center gap-2 min-w-0">
-                            <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${dotColors[ev.color]}`} />
-                            <span className="truncate pr-2 font-medium">{ev.msg}</span>
-                          </div>
-                          <span className="font-mono text-[10px] text-[#6b7280] dark:text-[#4a5070] shrink-0 select-none">
-                            {ev.ts}
-                          </span>
-                        </div>
-                      );
-                    })
-                  ) : (
-                    <div className="flex-1 flex items-center justify-center text-[#6b7280] dark:text-[#8b91b5] italic text-xs select-none">
-                      No recent events.
-                    </div>
-                  )}
-                </div>
+                <RecentEvents events={events} />
 
                 <div className="px-5 py-3 border-t border-black/5 dark:border-white/5 select-none">
                   <button className="text-[10px] font-bold uppercase tracking-wider text-[#6b7280] dark:text-[#8b91b5] hover:text-[#111827] dark:hover:text-white underline underline-offset-4 decoration-2">
