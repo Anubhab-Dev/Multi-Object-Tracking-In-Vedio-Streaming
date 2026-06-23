@@ -42,13 +42,15 @@ A command-line script to customize and train models:
 * Automatically uses Apple Metal (MPS) or CUDA to train models on the VisDrone dataset using `data.yaml`.
 * Saves trained checkpoint weights under `runs/detect/train/weights/best.pt`.
 
-### 4. Interactive Dashboard Frontend (`templates/index.html`, `static/js/main.js`)
-A modern, dark-themed user interface:
-* **KPI Metrics**: Real-time counters showing GPU/CPU latency (ms), frame rate (FPS), and active track counts.
-* **Dynamic Analytics Charts (Chart.js)**:
-  * *Class Distribution Chart*: A horizontal bar chart displaying the frequency of each detected class (e.g., how many cars, pedestrians, or trucks are currently in view).
-  * *Tracking Timeline Chart*: A scrolling line chart detailing how the total count of tracked objects fluctuates over time.
-* **Control Center**: Sidebar controls allow uploading local videos, selecting models/trackers, and adjusting confidence thresholds on the fly.
+### 4. Interactive Dashboard Frontend (Next.js + Tailwind CSS)
+A modern, component-driven, responsive user interface built in the `frontend` folder and synced as a static export to the FastAPI server:
+* **React Architecture**: Refactored into clean, modular sub-components:
+  * [Sidebar](file:///Users/anusha/Desktop/Multi-Object-Tracking-In-Vedio-Streaming/frontend/src/components/Sidebar.tsx): Navigation, live telemetry widget (FPS, Latency, Bitrate, Resolution), and connection state.
+  * [SettingsDrawer](file:///Users/anusha/Desktop/Multi-Object-Tracking-In-Vedio-Streaming/frontend/src/components/SettingsDrawer.tsx): Form controls to dynamically adjust tracker settings, switch models, set speed limit alerts, toggle heatmaps, and handle custom video uploads.
+  * [ActiveTracksTable](file:///Users/anusha/Desktop/Multi-Object-Tracking-In-Vedio-Streaming/frontend/src/components/ActiveTracksTable.tsx): Live-updating datagrid showing tracking IDs, confidence, position, speed, and real-time speeding violation statuses.
+  * [RecentEvents](file:///Users/anusha/Desktop/Multi-Object-Tracking-In-Vedio-Streaming/frontend/src/components/RecentEvents.tsx): A notification pane showing entry, exit, and speed alert occurrences.
+  * [TimelineChart](file:///Users/anusha/Desktop/Multi-Object-Tracking-In-Vedio-Streaming/frontend/src/components/TimelineChart.tsx): Interactive Chart.js timeline showing historical metrics for active tracks and accuracy.
+* **Tailwind CSS Styling**: Utilizes Tailwind CSS utility classes and design variables for seamless light/dark mode transitions, modern glassmorphism panels, and smooth micro-animations.
 
 ---
 
@@ -78,6 +80,7 @@ On every execution cycle, the system runs through the following workflow:
 * **Computer Vision**: OpenCV (Python), Ultralytics YOLOv8
 * **Tracking Frameworks**: ByteTrack, BoT-SORT
 * **Hardware Acceleration Support**: Apple Silicon MPS (Metal Performance Shaders) & NVIDIA CUDA
-* **Frontend Technologies**: HTML5 (Semantic Structure), CSS3 (Modern Flexbox/Grid layout, Dark Mode), Vanilla JS
-* **Data Visualization**: Chart.js (via CDN)
+* **Frontend Framework**: Next.js 16 (React 19, TypeScript)
+* **Styling**: Tailwind CSS v4
+* **Data Visualization**: Chart.js (via `react-chartjs-2`)
 * **Deployment/Containerization**: Docker, Git LFS (for large model weights), Hugging Face Spaces

@@ -58,6 +58,32 @@ If you need to re-create the virtual environment or run this project on another 
    ```
    *(Note: The project requires `ultralytics`, `fastapi`, `uvicorn`, `jinja2`, `opencv-python-headless`, and other dependencies specified in the requirements file).*
 
+4. **Frontend Setup & Development (Optional)**:
+   The project's frontend is built with Next.js and Tailwind CSS (located inside the `frontend/` directory) and compiled to static assets that are hosted by the FastAPI backend.
+   If you want to edit or develop the frontend:
+   * Navigate to the frontend directory:
+     ```bash
+     cd frontend
+     ```
+   * Install npm dependencies:
+     ```bash
+     npm install
+     ```
+   * Run the Next.js development server:
+     ```bash
+     npm run dev
+     ```
+     *(Access the hot-reloaded development page at **http://localhost:3000**).*
+   * Compile and sync changes to the FastAPI backend:
+     ```bash
+     npm run build
+     # Copy the static export output to backend templates/static directories
+     cp -f out/index.html ../data/mot_project/templates/index.html
+     rm -rf ../data/mot_project/static/_next
+     mkdir -p ../data/mot_project/static/_next
+     cp -r out/_next/* ../data/mot_project/static/_next/
+     ```
+
 ---
 
 ## 🛰️ Dashboard Features
@@ -124,21 +150,22 @@ This script will:
 ```
 Multi-Object-Tracking-In-Vedio-Streaming/
 ├── README.md                   # This instructions file
-├── .gitignore                  # Excludes .venv, runs/, uploads/, large binaries
+├── .gitignore                  # Excludes .venv, runs/, uploads/, large binaries, node_modules
 ├── yolov8n.pt                  # Base YOLOv8 Nano weights (tracked via Git LFS)
-└── data/
-    └── mot_project/
-        ├── app.py              # FastAPI app (WebSockets, routes, MJPEG stream)
-        ├── tracker.py          # OpenCV + Ultralytics YOLO tracker wrapper
-        ├── train.py            # Fine-tuning script for custom datasets
-        ├── requirements.txt    # Python dependencies
-        ├── data.yaml           # VisDrone dataset training configuration
-        ├── Dockerfile          # Docker image for Hugging Face Spaces
-        ├── deploy_hf.sh        # Hugging Face Spaces deployment script
-        ├── sample_traffic.mp4  # Built-in demo video (auto-downloaded if missing)
-        ├── templates/
-        │   └── index.html      # Full-stack dashboard (HTML + CSS + JS, inline)
-        ├── static/             # Static asset directory (mounted at /static)
-        ├── uploads/            # Temporary user-uploaded video files (git-ignored)
-        └── runs/               # Training outputs — best.pt lives here (git-ignored)
+├── data/
+│   └── mot_project/
+│       ├── app.py              # FastAPI app (WebSockets, routes, MJPEG stream)
+│       ├── tracker.py          # OpenCV + Ultralytics YOLO tracker wrapper
+│       ├── train.py            # Fine-tuning script for custom datasets
+│       ├── requirements.txt    # Python dependencies
+│       ├── data.yaml           # VisDrone dataset training configuration
+│       ├── Dockerfile          # Docker image for Hugging Face Spaces
+│       ├── deploy_hf.sh        # Hugging Face Spaces deployment script
+│       ├── sample_traffic.mp4  # Built-in demo video (auto-downloaded if missing)
+│       ├── templates/
+│       │   └── index.html      # Statically exported dashboard page (Next.js + Tailwind CSS)
+│       ├── static/             # Static asset directory (Next.js CSS & JS chunks mounted at /static)
+│       ├── uploads/            # Temporary user-uploaded video files (git-ignored)
+│       └── runs/               # Training outputs — best.pt lives here (git-ignored)
+└── frontend/                   # Next.js & Tailwind CSS Frontend SPA source code
 ```

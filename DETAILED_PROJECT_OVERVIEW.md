@@ -25,13 +25,9 @@ Multi-Object-Tracking-In-Vedio-Streaming/
 │       ├── hf_README.md               # Hugging Face Spaces configuration and metadata
 │       ├── deploy_hf.sh               # Git deployment script
 │       ├── sample_traffic.mp4         # Default fallback video (downloaded automatically if missing)
-│       ├── static/                    # Frontend assets
-│       │   ├── css/
-│       │   │   └── style.css          # Styled UI dashboard sheet (Dark theme & CSS variables)
-│       │   └── js/
-│       │       └── main.js            # Main dashboard controller (websockets, chart bindings)
+│       ├── static/                    # Frontend assets (Static exported _next/ directory)
 │       ├── templates/
-│       │   └── index.html             # Jinja2 template containing the dashboard structure
+│       │   └── index.html             # Jinja2 template containing the statically exported dashboard
 │       ├── runs/                      # Training artifacts & model weights
 │       │   └── detect/
 │       │       └── train/
@@ -40,6 +36,22 @@ Multi-Object-Tracking-In-Vedio-Streaming/
 │       │           │   └── last.pt    # The last training epoch checkpoint
 │       │           └── [plots]        # Visual graphs for F1-curve, PR-curve, confusion matrix
 │       └── uploads/                   # Folder created dynamically to hold uploaded custom videos
+└── frontend/                          # Next.js & Tailwind CSS Frontend Application
+    ├── package.json                   # NPM dependencies (Next.js, React, Tailwind, Lucide, Chart.js)
+    ├── postcss.config.mjs             # PostCSS integration for @tailwindcss/postcss
+    ├── next.config.ts                 # Next.js configurations (output: "export", unoptimized images)
+    ├── tsconfig.json                  # TypeScript compiler settings
+    └── src/
+        ├── app/
+        │   ├── layout.tsx             # Root layout including page-wide font settings
+        │   ├── globals.css            # Tailwind CSS configuration directives & custom scrollbars
+        │   └── page.tsx               # Main Dashboard page component coordinating state
+        └── components/                # Modular UI component files
+            ├── Sidebar.tsx            # Left navigation sidebar & performance telemetry dashboard
+            ├── SettingsDrawer.tsx     # Toggle settings, confidence sliders, video uploader dropdowns
+            ├── ActiveTracksTable.tsx  # Dynamic tracking data list for active instances
+            ├── RecentEvents.tsx       # Live events log rendering alerts in real-time
+            └── TimelineChart.tsx      # Chart.js visualization widget showing tracking performance
 ```
 
 ---
@@ -167,53 +179,45 @@ For every frame loaded by OpenCV:
 
 ## 📊 Front-End Dashboard Architecture: Deep-Dive
 
-The frontend is a single-page reactive dashboard (`templates/index.html`) using raw, styled CSS grid components and a Javascript controller (`static/js/main.js`).
+The frontend application is structured as a modern **Next.js Single Page Application (SPA)** written in **TypeScript** and styled with **Tailwind CSS v4**. It relies on React state hooks to implement a reactive state machine that syncs parameters dynamically with the FastAPI backend.
 
-### 1. The Javascript State Machine (`main.js`)
+### 1. Component Architecture & State Management
 
-`main.js` manages connections, updates UI text, and handles data binding:
+The dashboard's layout is coordinated by [page.tsx](file:///Users/anusha/Desktop/Multi-Object-Tracking-In-Vedio-Streaming/frontend/src/app/page.tsx), which manages:
+* **Connection State**: Track status (running, paused, offline), MJPEG feed source URI, and active WebSocket instance.
+* **Telemetry Aggregations**: Centralized trackers history array, speeding alerts, and class occurrence counters.
+* **Canvas Overlay State**: Scaled tripwire draw coordinate pairs (`[{x, y}, {x, y}]`) relative to the raw frame resolution (1280x720).
 
-#### **WebSocket Connection Lifecycle**
-Upon opening the page, the application attempts to establish a WebSocket connection:
-```javascript
-const wsProtocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-const socketUrl = `${wsProtocol}//${window.location.host}/ws`;
-const socket = new WebSocket(socketUrl);
-```
-* **Message Handling**: Every time a telemetry JSON packet is received:
-  1. Updates KPI cards (`Active Tracks`, `Frame Rate`, `Latency`).
-  2. Updates the Chart.js instances (charts redraw immediately without reloading).
+State is distributed into dedicated display components:
+* **[Sidebar](file:///Users/anusha/Desktop/Multi-Object-Tracking-In-Vedio-Streaming/frontend/src/components/Sidebar.tsx)**: Displays navigation, active page routing highlight, and system performance metrics (real-time FPS, Latency, Bitrate, and Resolution).
+* **[SettingsDrawer](file:///Users/anusha/Desktop/Multi-Object-Tracking-In-Vedio-Streaming/frontend/src/components/SettingsDrawer.tsx)**: Exposes form controls (sliders, select menus, checkboxes) that update React states. Select changes immediately fire updates to the backend, while range sliders (e.g. confidence thresholds) are debounced to prevent API rate-limiting.
+* **[ActiveTracksTable](file:///Users/anusha/Desktop/Multi-Object-Tracking-In-Vedio-Streaming/frontend/src/components/ActiveTracksTable.tsx)**: Formats the active tracking dataset into a neat grid. Highlights speeding violations with a red indicator when speed exceeds the configured limits.
+* **[RecentEvents](file:///Users/anusha/Desktop/Multi-Object-Tracking-In-Vedio-Streaming/frontend/src/components/RecentEvents.tsx)**: Displays a log of alerts (new object arrivals, departures, or speeding warnings) using fade-in micro-animations.
 
-#### **Chart.js Visualization Bindings**
-1. **Class Distribution Chart (`classChart`)**:
-   * Type: Horizontal Bar (`type: 'bar'`, indexAxis: `'y'`).
-   * Displays the count of each type of object (e.g. 5 cars, 2 trucks).
-   * Data is updated dynamically:
-     ```javascript
-     classChart.data.datasets[0].data = values;
-     classChart.update();
-     ```
-2. **Tracking Timeline Chart (`timelineChart`)**:
-   * Type: Line Chart (`type: 'line'`).
-   * Displays how many objects have been tracked over time.
-   * Employs a scrolling window: when data exceeds 30 historical values, the oldest value is removed to keep the chart scrolling smoothly:
-     ```javascript
-     if (timelineChart.data.labels.length > 30) {
-         timelineChart.data.labels.shift();
-         timelineChart.data.datasets[0].data.shift();
-     }
-     ```
+### 2. WebSocket Telemetry Synchronization
 
-#### **Dynamic Controls & HTTP Integration**
-* **Settings Watchers**: Sliders and selection elements call a debounce routine. When changed, they execute a `POST /update_settings` request with the new configurations:
-  ```json
-  {
-    "model_path": "runs/detect/train/weights/best.pt",
-    "tracker_type": "bytetrack.yaml",
-    "conf_threshold": 0.35
-  }
+Upon component mount, the frontend opens a WebSocket connection to the backend `/ws` channel. The websocket event handler processes telemetry JSON structures frame-by-frame:
+* Updates local state containing the current frame number, active track counts, average confidence levels, and active bounding box telemetry.
+* Triggers state transitions for new detections and speed violations to append alerts to the events log.
+
+### 3. Chart.js & react-chartjs-2 Bindings
+
+The [TimelineChart](file:///Users/anusha/Desktop/Multi-Object-Tracking-In-Vedio-Streaming/frontend/src/components/TimelineChart.tsx) component uses Chart.js line visualizations to render tracking history.
+* **Scrolling Window**: Maintains a historical dataset window capped at the last 30 frames. When a new frame payload is received, the oldest frame element is shifted out (`array.slice(1)`) to ensure smooth scrolling:
+  ```typescript
+  setChartLabels((prev) => {
+    const next = [...prev, stats.frame];
+    return next.length > 30 ? next.slice(1) : next;
+  });
   ```
-* **Custom Video Uploads**: Dragging or browsing a file fires a `FormData` upload to `/upload`. The UI blocks inputs, updates progress, and caches the returned file string to request it upon clicking **Start Stream**.
+* **Dynamic Theme Adapters**: Subscribes to changes in the active user theme (light/dark) to dynamically update gridlines, label font colors, and fill gradient alphas on the canvas.
+
+### 4. Tailwind CSS Styling Integration
+
+All design tokens are managed directly within [globals.css](file:///Users/anusha/Desktop/Multi-Object-Tracking-In-Vedio-Streaming/frontend/src/app/globals.css) using Tailwind CSS v4 variables:
+* **Custom Themes**: Declares colors, animations, and keyframes inside a Tailwind `@theme` block.
+* **Responsive Layouts**: Fully responsive grid systems (`grid grid-cols-1 lg:grid-cols-12 gap-6`) rearrange components cleanly on tablet, mobile, and widescreen displays.
+* **Aesthetics**: Premium visual touches like backdrop filters, custom scrollbars, dark mode glows, and smooth SVG transition states are implemented natively via Tailwind utility classes.
 
 ---
 
